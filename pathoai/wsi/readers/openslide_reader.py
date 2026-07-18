@@ -1,6 +1,6 @@
 """
-pathoai/wsi/openslide_reader.py
-==============================
+pathoai/wsi/readers/openslide_reader.py
+======================================
 OpenSlide adapter implementation of BaseWSI.
 
 Wraps the OpenSlide C library to read Whole Slide Images (WSIs),
@@ -8,8 +8,8 @@ performing format abstraction, resource management, exception wrapping,
 input validation, and converting RGBA PIL images to standard RGB NumPy arrays.
 
 Author: PathoAI Research Team
-Created: 2026-07-18
-Milestone: 2.1
+Created: 2026-07-19
+Milestone: 2
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ import numpy as np
 
 from pathoai.core.exceptions import WSIReadError
 from pathoai.core.logger import get_logger
-from pathoai.wsi.base import BaseWSI
+from pathoai.wsi.readers.base import BaseWSI
 
 logger = get_logger(__name__)
 
@@ -111,6 +111,41 @@ class OpenSlideWSI(BaseWSI):
         finally:
             self._slide = None
 
+    def _check_open(self) -> None:
+        """Raise WSIReadError if the slide is not open."""
+        if not self.is_open:
+            raise WSIReadError(f"Slide is not open: {self._path}")
+
+    @property
+    def properties(self) -> dict[str, str]:
+        """Raw format-specific slide properties."""
+        self._check_open()
+        return dict(self._slide.properties)
+
+    @property
+    def level_count(self) -> int:
+        """Number of pyramid levels in the image."""
+        self._check_open()
+        return int(self._slide.level_count)
+
+    @property
+    def level_dimensions(self) -> list[tuple[int, int]]:
+        """List of (width, height) pixel dimensions for each pyramid level."""
+        self._check_open()
+        return list(self._slide.level_dimensions)
+
+    @property
+    def level_downsamples(self) -> list[float]:
+        """List of downsample factors for each pyramid level."""
+        self._check_open()
+        return [float(ds) for ds in self._slide.level_downsamples]
+
+    @property
+    def associated_images(self) -> list[str]:
+        """Keys of associated images available."""
+        self._check_open()
+        return list(self._slide.associated_images.keys())
+
     def read_region(
         self,
         location: Tuple[int, int],
@@ -139,8 +174,7 @@ class OpenSlideWSI(BaseWSI):
             If the slide is not open, level is out of bounds, coordinates or size are
             invalid, or the underlying library read operation fails.
         """
-        if not self.is_open:
-            raise WSIReadError(f"Cannot read region. Slide is closed: {self._path}")
+        self._check_open()
 
         x, y = location
         w, h = size

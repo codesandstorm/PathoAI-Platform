@@ -1,14 +1,14 @@
 """
-pathoai/wsi/factory.py
-======================
+pathoai/wsi/readers/factory.py
+==============================
 Factory for instantiating Whole Slide Image readers.
 
 Decides which reader adapter implementation (e.g. OpenSlideWSI) to create
 based on the slide file format and configuration.
 
 Author: PathoAI Research Team
-Created: 2026-07-18
-Milestone: 2.1
+Created: 2026-07-19
+Milestone: 2
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ from pathlib import Path
 
 from pathoai.core.constants import SUPPORTED_WSI_FORMATS
 from pathoai.core.exceptions import WSIReadError
-from pathoai.wsi.base import BaseWSI
-from pathoai.wsi.openslide_reader import OpenSlideWSI
+from pathoai.wsi.readers.base import BaseWSI
+from pathoai.wsi.readers.openslide_reader import OpenSlideWSI
 
 
 def get_wsi_reader(path: str | Path) -> BaseWSI:

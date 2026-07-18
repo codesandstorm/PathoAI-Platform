@@ -1,6 +1,6 @@
 """
-pathoai/wsi/base.py
-===================
+pathoai/wsi/readers/base.py
+===========================
 Abstract base class definition for Whole Slide Image (WSI) readers.
 
 Provides the unified interface (BaseWSI) that abstracts WSI operations.
@@ -8,8 +8,8 @@ This design decouples slide reading backends (e.g. OpenSlide, ASAP, wholeslideda
 from downstream processing engines (patch extraction, segmentation, etc.).
 
 Author: PathoAI Research Team
-Created: 2026-07-18
-Milestone: 2.1
+Created: 2026-07-19
+Milestone: 2
 """
 
 from __future__ import annotations
@@ -99,4 +99,34 @@ class BaseWSI(ABC):
     @abstractmethod
     def is_open(self) -> bool:
         """True if the slide resource is open, False otherwise."""
+        pass
+
+    @property
+    @abstractmethod
+    def properties(self) -> dict[str, str]:
+        """Raw format-specific slide properties."""
+        pass
+
+    @property
+    @abstractmethod
+    def level_count(self) -> int:
+        """Number of pyramid levels in the image."""
+        pass
+
+    @property
+    @abstractmethod
+    def level_dimensions(self) -> list[tuple[int, int]]:
+        """List of (width, height) pixel dimensions for each pyramid level."""
+        pass
+
+    @property
+    @abstractmethod
+    def level_downsamples(self) -> list[float]:
+        """List of downsample factors for each pyramid level."""
+        pass
+
+    @property
+    @abstractmethod
+    def associated_images(self) -> list[str]:
+        """Keys of associated images (e.g. 'label', 'macro', 'thumbnail') available."""
         pass

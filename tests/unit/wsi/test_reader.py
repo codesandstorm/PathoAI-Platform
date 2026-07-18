@@ -7,14 +7,15 @@ Tests cover:
 - BaseWSI interface compliance
 - WSIReaderFactory format validation and instance creation
 - OpenSlideWSI context manager, resource lifecycle, and error wrapping
+- Metadata properties access on OpenSlideWSI
 - Input validation on read_region (bounds, sizes, levels)
 - Channel conversion logic (RGBA -> RGB)
 
 Uses sys.modules mocking to prevent loading OpenSlide C DLLs during test runs.
 
 Author: PathoAI Research Team
-Created: 2026-07-18
-Milestone: 2.1
+Created: 2026-07-19
+Milestone: 2
 """
 
 from __future__ import annotations
@@ -34,9 +35,9 @@ sys.modules["openslide"] = mock_openslide_module
 
 # Now we can safely import our WSI classes
 from pathoai.core.exceptions import WSIReadError
-from pathoai.wsi.base import BaseWSI
-from pathoai.wsi.factory import get_wsi_reader
-from pathoai.wsi.openslide_reader import OpenSlideWSI
+from pathoai.wsi.readers.base import BaseWSI
+from pathoai.wsi.readers.factory import get_wsi_reader
+from pathoai.wsi.readers.openslide_reader import OpenSlideWSI
 
 
 # ---------------------------------------------------------------------------
@@ -47,7 +48,6 @@ from pathoai.wsi.openslide_reader import OpenSlideWSI
 def reset_openslide_mocks():
     """Reset the mock openslide module's internal state before each test."""
     mock_openslide_module.reset_mock()
-    # Configure default mock attributes
     mock_openslide_module.OpenSlide = MagicMock
     yield
 
@@ -115,7 +115,7 @@ class TestOpenSlideWSILifecycle:
     def test_open_success(self, tmp_path: Path):
         """Loads OpenSlide and creates the underlying slide object successfully."""
         slide_path = tmp_path / "slide.svs"
-        slide_path.write_bytes(b"dummy")  # Create file to pass existence check
+        slide_path.write_bytes(b"dummy")
 
         mock_slide_instance = MagicMock()
         mock_openslide_module.OpenSlide = MagicMock(return_value=mock_slide_instance)
@@ -169,6 +169,50 @@ class TestOpenSlideWSILifecycle:
 
 
 # ---------------------------------------------------------------------------
+# OpenSlideWSI Metadata Properties
+# ---------------------------------------------------------------------------
+
+class TestOpenSlideWSIMetadataAccess:
+    """Verifies that properties raise WSIReadError if slide is closed, and return correct values when open."""
+
+    def test_properties_raise_if_closed(self, tmp_path: Path):
+        reader = OpenSlideWSI(tmp_path / "slide.svs")
+        with pytest.raises(WSIReadError, match="Slide is not open"):
+            _ = reader.properties
+        with pytest.raises(WSIReadError, match="Slide is not open"):
+            _ = reader.level_count
+        with pytest.raises(WSIReadError, match="Slide is not open"):
+            _ = reader.level_dimensions
+        with pytest.raises(WSIReadError, match="Slide is not open"):
+            _ = reader.level_downsamples
+        with pytest.raises(WSIReadError, match="Slide is not open"):
+            _ = reader.associated_images
+
+    def test_properties_returned_when_open(self, tmp_path: Path):
+        slide_path = tmp_path / "slide.svs"
+        slide_path.write_bytes(b"dummy")
+
+        mock_slide_instance = MagicMock()
+        mock_slide_instance.properties = {"openslide.vendor": "aperio"}
+        mock_slide_instance.level_count = 2
+        mock_slide_instance.level_dimensions = [(100, 100), (50, 50)]
+        mock_slide_instance.level_downsamples = [1.0, 2.0]
+        # mock associated_images keys
+        mock_slide_instance.associated_images = MagicMock()
+        mock_slide_instance.associated_images.keys.return_value = ["label"]
+
+        mock_openslide_module.OpenSlide = MagicMock(return_value=mock_slide_instance)
+
+        reader = OpenSlideWSI(slide_path)
+        reader.open()
+        assert reader.properties == {"openslide.vendor": "aperio"}
+        assert reader.level_count == 2
+        assert reader.level_dimensions == [(100, 100), (50, 50)]
+        assert reader.level_downsamples == [1.0, 2.0]
+        assert reader.associated_images == ["label"]
+
+
+# ---------------------------------------------------------------------------
 # OpenSlideWSI Region Reading & Input Validation
 # ---------------------------------------------------------------------------
 
@@ -187,13 +231,12 @@ class TestOpenSlideWSIReading:
 
         reader = OpenSlideWSI(slide_path)
         reader.open()
-        # Return the reader and its underlying mock slide for assertions
         return reader, mock_slide
 
     def test_read_region_raises_if_closed(self, tmp_path: Path):
         """Raises WSIReadError if trying to read a region from a closed slide."""
         reader = OpenSlideWSI(tmp_path / "slide.svs")
-        with pytest.raises(WSIReadError, match="Slide is closed"):
+        with pytest.raises(WSIReadError, match="Slide is closed|Slide is not open"):
             reader.read_region((0, 0), 0, (100, 100))
 
     def test_read_region_validates_coordinates(self, open_reader):
@@ -220,13 +263,12 @@ class TestOpenSlideWSIReading:
         """Raises WSIReadError if the level index is out of bounds."""
         reader, _ = open_reader
         with pytest.raises(WSIReadError, match="exceeds slide level count"):
-            reader.read_region((0, 0), 3, (100, 100))  # level_count is 3, valid levels are 0,1,2
+            reader.read_region((0, 0), 3, (100, 100))
 
     def test_read_region_returns_rgb_array(self, open_reader):
         """PIL RGBA image returned by OpenSlide is converted to RGB NumPy array."""
         reader, mock_slide = open_reader
 
-        # Create a mock PIL image (RGBA)
         width, height = 50, 40
         fake_img = Image.new("RGBA", (width, height), color=(255, 128, 64, 255))
         mock_slide.read_region.return_value = fake_img
@@ -236,7 +278,6 @@ class TestOpenSlideWSIReading:
         assert isinstance(result, np.ndarray)
         assert result.shape == (height, width, 3)
         assert result.dtype == np.uint8
-        # Verify color conversion: RGBA -> RGB
         np.testing.assert_array_equal(result[0, 0], [255, 128, 64])
         mock_slide.read_region.assert_called_once_with((10, 20), 1, (width, height))
 
@@ -262,11 +303,9 @@ class TestOpenSlideImportFailures:
         slide_path.write_bytes(b"dummy")
 
         reader = OpenSlideWSI(slide_path)
-        # Temporarily remove "openslide" from sys.modules to simulate missing/failed import
         sys.modules["openslide"] = None
         try:
             with pytest.raises(WSIReadError, match="Failed to import/load OpenSlide"):
                 reader.open()
         finally:
-            # Restore the mock module reference
             sys.modules["openslide"] = mock_openslide_module
