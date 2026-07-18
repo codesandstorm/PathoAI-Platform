@@ -156,3 +156,17 @@ data:
     train_dir: "data/raw/tiger/train"
     val_dir: "data/raw/tiger/val"
     test_dir: "data/raw/tiger/test"
+
+dataset:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  split_seed: 42
+  augmentations:
+    flip_prob: 0.5
+    rotate_prob: 0.5
+    brightness_contrast_prob: 0.5
+    brightness_limit: 0.2
+    contrast_limit: 0.2
+    gaussian_noise_prob: 0.2
+

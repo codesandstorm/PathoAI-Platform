@@ -78,3 +78,17 @@ output:
   save_json_report: false
   save_patch_probs: false
   save_coordinate_map: false
+
+dataset:
+  train_ratio: 0.60
+  val_ratio: 0.20
+  test_ratio: 0.20
+  split_seed: 42
+  augmentations:
+    flip_prob: 0.5
+    rotate_prob: 0.5
+    brightness_contrast_prob: 0.5
+    brightness_limit: 0.2
+    contrast_limit: 0.2
+    gaussian_noise_prob: 0.2
+
