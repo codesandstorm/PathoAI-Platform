@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "pathoai-platform"
+version = "0.1.0"
+description = "Research-grade computational pathology platform for automated sTIL scoring"
+authors = [{ name = "PathoAI Research Team", email = "research@pathoai.dev" }]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["computational pathology", "whole slide imaging", "TIL", "breast cancer", "AI", "deep learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+]
+
+dependencies = [
+    "numpy>=1.24.0,<2.0.0",
+    "scipy>=1.10.0",
+    "Pillow>=9.5.0",
+    "opencv-python>=4.8.0",
+    "scikit-image>=0.21.0",
+    "albumentations>=1.3.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "timm>=0.9.0",
+    "segmentation-models-pytorch>=0.3.3",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.3.0",
+    "PyYAML>=6.0.1",
+    "tensorboard>=2.13.0",
+    "matplotlib>=3.7.0",
+    "tqdm>=4.66.0",
+    "packaging>=23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.1.0",
+    "jupyterlab>=4.0.0",
+    "psutil>=5.9.0",
+]
+wsi = [
+    "openslide-python>=1.3.0",
+]
+
+[project.scripts]
+pathoai-setup = "scripts.setup_environment:main"
+pathoai-validate = "scripts.validate_dataset:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pathoai*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]  # Line length handled separately
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.coverage.run]
+source = ["pathoai"]
+omit = ["tests/*", "scripts/*", "notebooks/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

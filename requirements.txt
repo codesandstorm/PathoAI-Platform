@@ -1,0 +1,59 @@
+# PathoAI-Platform Runtime Requirements
+# Python 3.11 | Windows 11 x64
+# Generated: 2026-07-18 | Milestone 1
+
+# ── Core Scientific Computing ────────────────────────────────────────────────
+numpy>=1.24.0,<2.0.0
+scipy>=1.10.0
+
+# ── Image Processing ─────────────────────────────────────────────────────────
+Pillow>=9.5.0
+opencv-python>=4.8.0
+scikit-image>=0.21.0
+albumentations>=1.3.0
+
+# ── Deep Learning ────────────────────────────────────────────────────────────
+# NOTE: PyTorch requires special installation command!
+# For CPU-only (this machine — Intel iGPU, no NVIDIA CUDA):
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# For CUDA 12.1:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+timm>=0.9.0
+segmentation-models-pytorch>=0.3.3
+
+# ── WSI Reading ──────────────────────────────────────────────────────────────
+# IMPORTANT: Requires OpenSlide C binaries! Install separately:
+# https://github.com/openslide/openslide-winbuild/releases
+openslide-python>=1.3.0
+
+# ── Data Science ─────────────────────────────────────────────────────────────
+pandas>=2.0.0
+scikit-learn>=1.3.0
+
+# ── Configuration ────────────────────────────────────────────────────────────
+PyYAML>=6.0.1
+packaging>=23.0
+
+# ── Experiment Tracking ──────────────────────────────────────────────────────
+tensorboard>=2.13.0
+
+# ── Visualization ────────────────────────────────────────────────────────────
+matplotlib>=3.7.0
+
+# ── Progress Display ─────────────────────────────────────────────────────────
+tqdm>=4.66.0
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+python-dateutil>=2.8.2
+psutil>=5.9.0
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# ── Notebooks ────────────────────────────────────────────────────────────────
+jupyterlab>=4.0.0
+ipykernel>=6.25.0

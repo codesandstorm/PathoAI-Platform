@@ -1,0 +1,158 @@
+# =============================================================================
+# config/base.yaml
+# PathoAI-Platform — Master Configuration File
+#
+# This file defines ALL configurable parameters with research-grade defaults.
+# Every parameter has a comment explaining its purpose and valid range.
+#
+# Override hierarchy (lowest → highest priority):
+#   base.yaml → dataset.yaml → model.yaml → experiment.yaml → env vars → CLI
+#
+# Environment variable overrides: PATHOAI_<SECTION>__<KEY>=value
+#   Example: PATHOAI_PIPELINE__DEVICE=cpu
+#
+# Version: 1.0.0
+# Milestone: 1
+# =============================================================================
+
+pipeline:
+  name: "pathoai_baseline"       # Experiment name (used in log/result dirs)
+  version: "0.1.0"               # Pipeline version (matches pathoai.__version__)
+  seed: 42                       # Global random seed for reproducibility
+  device: "auto"                 # "auto" | "cuda" | "cuda:0" | "cpu"
+  mixed_precision: false         # Enable AMP — requires CUDA with Tensor Cores
+  resume: true                   # Resume from checkpoint if stage output exists
+  save_intermediates: true       # Save per-stage outputs (disk space vs. debuggability)
+  num_workers: 4                 # DataLoader worker processes (set 0 for debugging)
+  pin_memory: false              # Set true only when using CUDA GPU
+
+wsi:
+  supported_formats:
+    - ".svs"
+    - ".ndpi"
+    - ".tif"
+    - ".tiff"
+    - ".scn"
+    - ".mrxs"
+    - ".vms"
+    - ".bif"
+
+  thumbnail:
+    max_dim: 2048                # Max thumbnail side length in pixels
+                                 # Larger = more accurate tissue detection but slower
+
+  tissue_detection:
+    method: "otsu_hsv"           # "otsu_hsv" | "otsu_gray" | "color_threshold"
+                                 # otsu_hsv: Otsu threshold on HSV saturation channel
+                                 # Robust to white-balance variation across scanners
+    min_tissue_ratio: 0.05       # Slides with < 5% tissue area are rejected
+                                 # Clinical minimum: no scoring meaningful below this
+    morph_kernel_size: 15        # Morphological operation kernel size (pixels)
+                                 # Larger = smoother masks; smaller = preserve detail
+    min_component_pixels: 1000   # Remove connected components smaller than this
+                                 # Eliminates ink dots, small artifacts
+
+  patch_extraction:
+    patch_size: 512              # Patch width = height in pixels (square only)
+                                 # 512px at 20× ≈ 256 μm physical extent
+    stride: 256                  # Sliding window stride (pixels)
+                                 # stride < patch_size → overlapping patches
+                                 # 50% overlap (stride=256 with patch=512) is standard
+    target_mpp: 0.50             # Target microns-per-pixel for segmentation
+                                 # 0.50 ≈ 20× magnification equivalent
+    blank_threshold: 230         # Patches with mean RGB > this are discarded (blank)
+                                 # Range: [0, 255]. 230 ≈ near-white
+    blur_threshold: 50.0         # Patches with Laplacian variance < this are flagged
+                                 # Lower values = more blurry patches flagged
+    min_tissue_coverage: 0.25    # Fraction of patch that must be tissue (0–1)
+                                 # Patches with < 25% tissue are discarded
+
+stain_normalization:
+  method: "macenko"              # "macenko" | "vahadane" | "reinhard" | "none"
+                                 # macenko: fastest, widely used
+                                 # vahadane: structure-preserving, slower
+                                 # reinhard: simple color transfer, fastest
+                                 # none: no normalization (not recommended for training)
+  reference_slide: null          # Path to reference slide (null = use built-in matrix)
+  fail_on_error: false           # If true, stop on normalization failure
+                                 # If false, use unnormalized patch and log warning
+
+segmentation:
+  model_name: "deeplabv3plus_efficientnet_b3"
+  n_classes: 6                   # Must match TISSUE_CLASSES in constants.py
+  input_size: 512                # Model input resolution (square)
+  batch_size: 8                  # Reduce if GPU OOM; increase for speed
+  checkpoint: null               # Path to .pth checkpoint file (null = random init)
+  checkpoint_sha256: null        # Expected SHA-256 hash for checkpoint verification
+
+  training:
+    epochs: 100
+    learning_rate: 0.0001        # Initial LR for AdamW optimizer
+    weight_decay: 0.0001
+    lr_scheduler: "cosine"       # "cosine" | "step" | "plateau"
+    warmup_epochs: 5
+    loss_weights:
+      dice: 0.5                  # Weight for Dice loss component
+      focal: 0.5                 # Weight for Focal loss component
+    class_weights: null          # Per-class loss weights (null = auto-computed)
+    early_stopping_patience: 15  # Epochs without improvement before stopping
+
+detection:
+  model_name: "faster_rcnn_resnet34"
+  n_classes: 4                   # background + 3 cell classes (see CELL_CLASSES)
+  input_size: 256                # Detection at higher resolution (40×)
+  batch_size: 16
+  checkpoint: null
+  checkpoint_sha256: null
+  min_confidence: 0.50           # Drop detections below this confidence
+  nms_iou_threshold: 0.50        # NMS IoU threshold (higher = fewer suppressed boxes)
+  target_mpp: 0.25               # Target MPP for cell detection (≈ 40×)
+
+  training:
+    epochs: 80
+    learning_rate: 0.0001
+    weight_decay: 0.0001
+    lr_scheduler: "step"
+    lr_step_size: 20
+    lr_gamma: 0.1
+
+fusion:
+  lymphocyte_class_id: 2         # Cell class ID for lymphocytes (LYMPHOCYTE_DET_CLASS_ID)
+  stroma_class_id: 2             # Tissue class ID for stroma (STROMA_CLASS_ID)
+                                 # Note: different constants — seg classes vs. det classes
+  min_stroma_area_mm2: 0.5       # Minimum stroma area (mm²) to compute reliable score
+  aggregation: "weighted_mean"   # "weighted_mean" | "mean" | "median"
+                                 # weighted_mean: weights patches by stroma area
+
+validation:
+  bootstrap_n: 1000              # Bootstrap resamples for CI estimation
+  confidence_level: 0.95         # CI confidence level (0.95 = 95%)
+  min_lymphocytes: 50            # Flag LOW_CONFIDENCE below this count
+  max_ci_width: 20.0             # Flag LOW_CONFIDENCE if CI width > 20 percentage points
+  pathologist_labels: null       # Path to CSV with pathologist sTIL scores (for eval)
+
+logging:
+  level: "INFO"                  # "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL"
+  console: true                  # Output to stdout
+  file_rotation_mb: 50           # Rotate log file at this size
+  file_backup_count: 5           # Keep this many rotated log files
+
+output:
+  base_dir: "results"            # Base directory for pipeline outputs
+  log_dir: "logs"                # Log file directory
+  model_dir: "models/trained"    # Trained checkpoint directory
+
+  save_segmentation_overlay: true
+  save_detection_overlay: true
+  save_stil_heatmap: true
+  save_json_report: true
+  save_patch_probs: false        # Large files — enable only for debugging
+  save_coordinate_map: true
+
+data:
+  tiger:
+    root_dir: "data/raw/tiger"
+    splits_file: "splits/tiger_train_val_test.json"
+    train_dir: "data/raw/tiger/train"
+    val_dir: "data/raw/tiger/val"
+    test_dir: "data/raw/tiger/test"
