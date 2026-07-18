@@ -1,1 +1,1 @@
-﻿"""Unit tests for pathoai.segmentation."""
+"""tests/unit/segmentation package marker."""
