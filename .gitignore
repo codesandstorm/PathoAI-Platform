@@ -1,19 +1,39 @@
 # PathoAI-Platform .gitignore
 # Comprehensive exclusions for research ML project
+# Last updated: 2026-07-18 — see CONTRIBUTING.md §3 for full policy
+
+# ── Whole Slide Images (never in Git — these are gigabyte-scale files) ────────
+*.svs
+*.ndpi
+*.scn
+*.mrxs
+*.vms
+*.vmu
+*.bif
+# Note: .tif/.tiff excluded below to avoid blocking config or test TIFFs by
+# extension alone — rely on data/ / models/ directory rules instead.
 
 # ── Data (too large for git) ──────────────────────────────────────────────────
-data/raw/
-data/processed/
+data/
 !data/.gitkeep
 
-# ── Model Checkpoints (too large) ────────────────────────────────────────────
-models/pretrained/
-models/trained/
+# ── Model Checkpoints & Weights (too large) ─────────────────────────────────
+models/
 !models/.gitkeep
 *.pth
 *.pt
 *.ckpt
 *.pkl
+*.onnx
+*.safetensors
+
+# ── Checkpoints directory ────────────────────────────────────────────────────
+checkpoints/
+!checkpoints/.gitkeep
+
+# ── Outputs (generated artifacts — reproducible from code) ───────────────────
+outputs/
+!outputs/.gitkeep
 
 # ── Pipeline Results (reproducible from code) ────────────────────────────────
 results/
@@ -23,7 +43,8 @@ results/
 logs/
 !logs/.gitkeep
 *.log
-*.jsonl
+# JSONL experiment logs (not test fixtures)
+logs/**/*.jsonl
 
 # ── Python Artifacts ─────────────────────────────────────────────────────────
 __pycache__/
@@ -103,11 +124,33 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
+# ── Splits / Fold definitions (generated, not source) ───────────────────────
+splits/
+!splits/.gitkeep
+
+# ── Cache directories ────────────────────────────────────────────────────────
+.cache/
+cache/
+
+# ── Large Archive Files ──────────────────────────────────────────────────────
+*.zip
+*.tar
+*.gz
+*.tar.gz
+*.tar.bz2
+*.7z
+*.bz2
+*.xz
+
 # ── Large Intermediate Files ─────────────────────────────────────────────────
 *.npy
 *.npz
 *.hdf5
 *.h5
+
+# ── WSI / Medical Imaging Formats (belt-and-suspenders on top of dir rules) ──
+*.tif
+*.tiff
 
 # ── Documentation Build ──────────────────────────────────────────────────────
 docs/_build/
