@@ -1,0 +1,91 @@
+# .pre-commit-config.yaml
+# PathoAI-Platform — Pre-commit Hook Configuration
+#
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+#
+# Enforces code quality gates BEFORE every commit.
+# This catches issues locally, reducing failed CI runs.
+#
+# Milestone: 1.1
+
+repos:
+  # ---------------------------------------------------------------------------
+  # 1. Standard file hygiene (trailing whitespace, EOF, merge conflicts, etc.)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix missing newline at EOF
+      - id: check-yaml
+        name: Validate YAML syntax
+        args: [--allow-multiple-documents]
+      - id: check-toml
+        name: Validate TOML syntax
+      - id: check-json
+        name: Validate JSON syntax
+      - id: check-merge-conflict
+        name: Detect unresolved merge conflict markers
+      - id: check-added-large-files
+        name: Block large files (> 5 MB)
+        args: [--maxkb=5120]
+      - id: check-case-conflict
+        name: Check for filename case conflicts
+      - id: debug-statements
+        name: Detect debug statements (pdb, breakpoint, etc.)
+      - id: mixed-line-ending
+        name: Normalize line endings
+        args: [--fix=lf]
+      - id: no-commit-to-branch
+        name: Prevent direct commits to main/master
+        args: [--branch, main, --branch, master]
+
+  # ---------------------------------------------------------------------------
+  # 2. Ruff — linter and formatter (replaces flake8 + isort + pyupgrade)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        name: Run ruff linter
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: Run ruff formatter
+        types_or: [python, pyi]
+
+  # ---------------------------------------------------------------------------
+  # 3. Safety — check for known security vulnerabilities in dependencies
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        name: Audit pip dependencies for known vulnerabilities
+        args: [--skip-editable]
+
+  # ---------------------------------------------------------------------------
+  # 4. Detect secrets — prevent API keys/passwords entering the codebase
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect hardcoded secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)^(
+            .*\.lock|
+            .*\.yaml\.example|
+            tests/fixtures/.*
+          )$
+
+# ---------------------------------------------------------------------------
+# Global pre-commit configuration
+# ---------------------------------------------------------------------------
+default_stages: [pre-commit]
+fail_fast: false
+minimum_pre_commit_version: "3.0.0"
