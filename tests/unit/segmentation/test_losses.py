@@ -74,21 +74,21 @@ class TestLossFactory:
     """Verifies config-driven loss creation and error conditions."""
 
     def test_factory_resolves_correctly(self):
-        config = MagicMock()
+        from pathoai.core.config import ConfigNode
 
         # Cross entropy
-        config.segmentation.loss_name = "ce"
+        config = ConfigNode({"segmentation": {"loss_name": "ce"}})
         loss = LossFactory.create_loss(config)
         assert isinstance(loss, nn.CrossEntropyLoss)
 
         # Dice CE Combined
-        config.segmentation.loss_name = "dice_ce"
+        config = ConfigNode({"segmentation": {"loss_name": "dice_ce"}})
         loss = LossFactory.create_loss(config)
         assert isinstance(loss, CombinedLoss)
 
     def test_factory_invalid_loss_name_raises(self):
-        config = MagicMock()
-        config.segmentation.loss_name = "invalid_name_123"
+        from pathoai.core.config import ConfigNode
+        config = ConfigNode({"segmentation": {"loss_name": "invalid_name_123"}})
 
         with pytest.raises(ValidationError, match="Unsupported loss name"):
             LossFactory.create_loss(config)

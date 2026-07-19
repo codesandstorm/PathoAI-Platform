@@ -28,13 +28,15 @@ class TestModelFactory:
     """Verifies that model creation dynamically loads and instantiates models."""
 
     def test_create_deeplabv3plus_success(self):
-        # Create a mock configuration object
-        config = MagicMock()
-        config.segmentation.model_name = "deeplabv3plus"
-        config.segmentation.n_classes = 4
-        # Configure backbone properties
-        config.segmentation.encoder_name = "resnet18"  # lightweight for testing
-        config.segmentation.encoder_weights = None     # disable downloads during test
+        from pathoai.core.config import ConfigNode
+        config = ConfigNode({
+            "segmentation": {
+                "model_name": "deeplabv3plus",
+                "n_classes": 4,
+                "encoder_name": "resnet18",
+                "encoder_weights": None
+            }
+        })
 
         # Instantiate model
         model = create_model(config)

@@ -46,15 +46,29 @@ def create_model(config: Any) -> nn.Module:
     model_name = seg_cfg.model_name
     n_classes = seg_cfg.n_classes
 
-    # Fetch custom properties from configuration sections if present
-    # We resolve encoder parameter names which can differ across backbones
-    encoder_name = getattr(seg_cfg, "encoder_name", "resnet34")
-    encoder_weights = getattr(seg_cfg, "encoder_weights", "imagenet")
+    # Resolve encoder and architecture key from composite name if needed
+    if "deeplabv3plus" in model_name.lower():
+        arch_key = "deeplabv3plus"
+        parts = model_name.split("_", 1)
+        if len(parts) > 1:
+            enc_part = parts[1].replace("_", "-")
+            if "resnet" in enc_part:
+                enc_part = enc_part.replace("-", "")
+            encoder_name = enc_part
+        else:
+            encoder_name = seg_cfg.get("encoder_name", "resnet34")
+    else:
+        arch_key = model_name
+        encoder_name = seg_cfg.get("encoder_name", "resnet34")
+
+    # Pretrained weights defaults
+    encoder_weights = seg_cfg.get("encoder_weights", "imagenet")
 
     logger.info(
         "Creating segmentation model",
         extra={
             "model_name": model_name,
+            "arch_key": arch_key,
             "n_classes": n_classes,
             "encoder": encoder_name,
             "pretrained": encoder_weights,
@@ -62,7 +76,7 @@ def create_model(config: Any) -> nn.Module:
     )
 
     # Fetch the architecture class from registry
-    arch_class = get_model_class(model_name)
+    arch_class = get_model_class(arch_key)
 
     # Instantiate model
     model = arch_class(

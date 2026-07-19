@@ -56,6 +56,9 @@ class Trainer:
         device: Union[str, torch.device] = "cpu",
         state: Optional[TrainerState] = None,
         callbacks: Optional[List[Any]] = None,
+        use_amp: bool = False,
+        accumulate_grad_batches: int = 1,
+        grad_clip_val: Optional[float] = None,
     ) -> None:
         """
         Parameters
@@ -72,6 +75,12 @@ class Trainer:
             TrainerState object to restore state or initialize a new one.
         callbacks : List[Callback], optional
             List of Callback observers to monitor training.
+        use_amp : bool
+            Whether to use Automatic Mixed Precision.
+        accumulate_grad_batches : int
+            Number of batches to accumulate gradients over before optimizer step.
+        grad_clip_val : float, optional
+            Maximum gradient norm value for clipping.
         """
         self.model = model.to(device)
         self.optimizer = optimizer
@@ -84,6 +93,14 @@ class Trainer:
 
         # Control flags
         self.stop_training = False
+
+        # Advanced training params
+        self.use_amp = use_amp and self.device.type == "cuda"
+        self.accumulate_grad_batches = max(1, accumulate_grad_batches)
+        self.grad_clip_val = grad_clip_val
+
+        # AMP Scaler
+        self.scaler = torch.cuda.amp.GradScaler() if self.use_amp else None
 
         # Holders for batch/epoch intermediates (can be accessed by metrics/callbacks)
         self.current_batch_img: Optional[torch.Tensor] = None
@@ -120,7 +137,16 @@ class Trainer:
         self.stop_training = False
         self.callback_manager.trigger("on_train_begin", self)
 
-        logger.info("Starting training run", extra={"epochs": epochs, "device": str(self.device)})
+        logger.info(
+            "Starting training run",
+            extra={
+                "epochs": epochs,
+                "device": str(self.device),
+                "use_amp": self.use_amp,
+                "accumulation_batches": self.accumulate_grad_batches,
+                "grad_clip": self.grad_clip_val,
+            },
+        )
 
         for epoch in range(self.state.epoch, epochs):
             if self.stop_training:
@@ -157,7 +183,7 @@ class Trainer:
         return self.state
 
     def train_epoch(self, loader: DataLoader) -> float:
-        """Run a single epoch of training.
+        """Run a single epoch of training with AMP, clipping, and accumulation.
 
         Parameters
         ----------
@@ -174,6 +200,8 @@ class Trainer:
         n_batches = len(loader)
         self.num_batches = n_batches
 
+        self.optimizer.zero_grad()
+
         for batch_idx, (images, targets) in enumerate(loader):
             self.batch_idx = batch_idx
             self.callback_manager.trigger("on_batch_begin", self)
@@ -184,20 +212,53 @@ class Trainer:
             self.current_batch_img = images
             self.current_batch_lbl = targets
 
-            # Forward pass
-            self.optimizer.zero_grad()
-            outputs = self.model(images)
-            self.current_batch_pred = outputs
+            # Forward pass under autocast if AMP is active
+            if self.use_amp:
+                with torch.cuda.amp.autocast():
+                    outputs = self.model(images)
+                    loss = self.loss_fn(outputs, targets)
+                    # Scale loss to adjust for gradient accumulation
+                    loss = loss / self.accumulate_grad_batches
+            else:
+                outputs = self.model(images)
+                loss = self.loss_fn(outputs, targets)
+                loss = loss / self.accumulate_grad_batches
 
-            # Loss computation
-            loss = self.loss_fn(outputs, targets)
+            self.current_batch_pred = outputs
             self.current_batch_loss = loss
 
-            # Backward pass
-            loss.backward()
-            self.optimizer.step()
+            # Check loss validity
+            if not torch.isfinite(loss):
+                raise RuntimeError(
+                    f"Loss value is NaN or Inf at epoch {self.state.epoch + 1}, "
+                    f"batch {batch_idx + 1}: {loss.item()}"
+                )
 
-            total_loss += loss.item()
+            # Backward pass
+            if self.use_amp and self.scaler is not None:
+                self.scaler.scale(loss).backward()
+            else:
+                loss.backward()
+
+            # Optimizer Step & Clip (only at accumulation boundaries)
+            is_update_step = (batch_idx + 1) % self.accumulate_grad_batches == 0 or (batch_idx + 1) == n_batches
+            if is_update_step:
+                if self.use_amp and self.scaler is not None:
+                    # Unscale gradients before clipping
+                    if self.grad_clip_val is not None:
+                        self.scaler.unscale_(self.optimizer)
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_val)
+                    
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
+                else:
+                    if self.grad_clip_val is not None:
+                        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip_val)
+                    self.optimizer.step()
+
+                self.optimizer.zero_grad()
+
+            total_loss += loss.item() * self.accumulate_grad_batches
             self.state.global_step += 1
 
             self.callback_manager.trigger("on_batch_end", self)

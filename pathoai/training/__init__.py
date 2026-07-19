@@ -8,12 +8,14 @@ Exposes:
     ModelCheckpoint: Checkpoint saving.
     LRSchedulerCallback: Steps learning rate schedulers.
     ProgressLogger: tqdm console progress bar.
+    MetricsCallback: Aggregates validation metrics.
     SegmentationMetrics: Segmentation accuracy indices.
     ConfusionMatrixMetric: Confusion matrix and Cohen's Kappa.
     MetricCollection: Aggregates metrics update/compute/reset.
     HistoryTracker: Handles history recording and formatting.
     CheckpointManager: Manages checkpoint serialization and pruning.
     Experiment: Manages experiment directories and configuration backups.
+    run_experiment: Main pipeline executor.
 """
 
 from pathoai.training.callbacks import (
@@ -22,6 +24,7 @@ from pathoai.training.callbacks import (
     LRSchedulerCallback,
     ModelCheckpoint,
     ProgressLogger,
+    MetricsCallback,
 )
 from pathoai.training.checkpoint import CheckpointManager
 from pathoai.training.experiment import Experiment
@@ -32,6 +35,7 @@ from pathoai.training.metrics import (
     SegmentationMetrics,
 )
 from pathoai.training.trainer import Trainer, TrainerState
+from pathoai.training.run import run_experiment
 
 __all__ = [
     "Trainer",
@@ -41,10 +45,12 @@ __all__ = [
     "LRSchedulerCallback",
     "ModelCheckpoint",
     "ProgressLogger",
+    "MetricsCallback",
     "CheckpointManager",
     "Experiment",
     "HistoryTracker",
     "ConfusionMatrixMetric",
     "MetricCollection",
     "SegmentationMetrics",
+    "run_experiment",
 ]

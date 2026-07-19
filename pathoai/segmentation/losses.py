@@ -151,7 +151,7 @@ class LossFactory:
             Instantiated loss function.
         """
         seg_cfg = config.segmentation
-        loss_name = getattr(seg_cfg, "loss_name", "ce").lower()
+        loss_name = seg_cfg.get("loss_name", "ce").lower()
 
         # Convert class weights list to torch Tensor
         weights_tensor: Optional[torch.Tensor] = None

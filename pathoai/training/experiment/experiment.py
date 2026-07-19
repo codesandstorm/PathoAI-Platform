@@ -53,6 +53,7 @@ class Experiment:
         self.reports_dir = self.experiment_dir / "reports"
         self.logs_dir = self.experiment_dir / "logs"
         self.tensorboard_dir = self.experiment_dir / "tensorboard"
+        self.exports_dir = self.experiment_dir / "exports"
 
     def setup(self) -> None:
         """Create all subdirectories and copy the current configuration file."""
@@ -67,6 +68,7 @@ class Experiment:
             self.reports_dir,
             self.logs_dir,
             self.tensorboard_dir,
+            self.exports_dir,
         ]
 
         for d in dirs:

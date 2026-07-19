@@ -54,6 +54,7 @@ wsi = [
 [project.scripts]
 pathoai-setup = "scripts.setup_environment:main"
 pathoai-validate = "scripts.validate_dataset:main"
+pathoai-train = "pathoai.training.run:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

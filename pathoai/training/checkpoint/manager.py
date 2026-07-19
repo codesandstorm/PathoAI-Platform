@@ -66,6 +66,13 @@ class CheckpointManager:
         # Load metadata if it exists
         self._load_metadata()
 
+    @property
+    def best_epoch(self) -> Optional[int]:
+        """Return the epoch number of the best checkpoint."""
+        if not self.top_k_checkpoints:
+            return None
+        return self.top_k_checkpoints[0]["epoch"]
+
     def _load_metadata(self) -> None:
         """Load checkpoint tracking metadata from disk."""
         if self.meta_path.is_file():
