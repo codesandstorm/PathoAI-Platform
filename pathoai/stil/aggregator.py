@@ -1,6 +1,6 @@
 """
-pathoai/fusion/aggregator.py
-============================
+pathoai/stil/aggregator.py
+==========================
 Patch-to-Slide Level Aggregator.
 
 Aggregates patch-level segmentations, cell counts, and scores into slide-level metrics
@@ -8,7 +8,7 @@ and constructs spatial grid heatmaps for sTIL density distributions.
 
 Author: PathoAI Research Team
 Created: 2026-07-19
-Milestone: 6.3
+Milestone: 9.2
 """
 
 from __future__ import annotations

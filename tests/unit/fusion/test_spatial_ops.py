@@ -1,7 +1,7 @@
 """
 tests/unit/fusion/test_spatial_ops.py
 =====================================
-Unit tests for spatial operations module.
+Unit tests for spatial intersection and point filtering operations.
 
 Author: PathoAI Research Team
 Created: 2026-07-19
@@ -10,56 +10,13 @@ Created: 2026-07-19
 import numpy as np
 import pytest
 
-from pathoai.fusion.spatial_ops import (
-    calculate_mask_area,
-    extract_tumor_associated_stroma,
-    extract_tumor_bed,
-    filter_points_in_mask,
-)
+from pathoai.fusion.geometry import calculate_mask_area
+from pathoai.fusion.point_filter import filter_points_in_mask
+from pathoai.fusion.spatial_intersection import extract_tumor_associated_stroma
 
 
 class TestSpatialOps:
     """Test spatial operations."""
-
-    def test_extract_tumor_bed_empty(self):
-        """Test with empty mask."""
-        mask = np.zeros((10, 10), dtype=np.uint8)
-        res = extract_tumor_bed(mask, mpp=0.5, dilation_dist_um=1.0)
-        assert not np.any(res)
-
-    def test_extract_tumor_bed_invalid_mpp(self):
-        """Test with non-positive mpp."""
-        mask = np.ones((5, 5), dtype=np.uint8)
-        with pytest.raises(ValueError, match="mpp must be positive"):
-            extract_tumor_bed(mask, mpp=0.0)
-
-    def test_extract_tumor_bed_invalid_dilation(self):
-        """Test with negative dilation distance."""
-        mask = np.ones((5, 5), dtype=np.uint8)
-        with pytest.raises(ValueError, match="dilation_dist_um must be non-negative"):
-            extract_tumor_bed(mask, mpp=0.5, dilation_dist_um=-1.0)
-
-    def test_extract_tumor_bed_dilation_and_fill(self):
-        """Test dilation and hole filling on a hollow square."""
-        # Hollow square of size 7x7
-        mask = np.zeros((9, 9), dtype=np.uint8)
-        # Outer boundary of square
-        mask[1:8, 1] = 1
-        mask[1:8, 7] = 1
-        mask[1, 1:8] = 1
-        mask[7, 1:8] = 1
-        # The center at (4,4) is hollow (0)
-
-        # No dilation, just hole filling
-        res_fill = extract_tumor_bed(mask, mpp=0.5, dilation_dist_um=0.0)
-        # Center should be filled (True)
-        assert res_fill[4, 4] == True
-
-        # Dilate by 1 pixel (dilation_dist_um = 0.5 um, mpp = 0.5 um/pixel -> 1 pixel radius)
-        res_dilate = extract_tumor_bed(mask, mpp=0.5, dilation_dist_um=0.5)
-        # The entire square and its expanded border should be filled
-        assert res_dilate[4, 4] == True
-        assert res_dilate[0, 4] == True  # outer dilated row
 
     def test_extract_tumor_associated_stroma(self):
         """Test logical intersection of tumor bed and raw stroma."""
@@ -69,7 +26,6 @@ class TestSpatialOps:
         stroma = np.zeros((5, 5), dtype=bool)
         stroma[2:5, 2:5] = True
 
-        # Intersection is (2,2) and (3,3) region
         expected = np.zeros((5, 5), dtype=bool)
         expected[2:4, 2:4] = True
 
@@ -98,12 +54,8 @@ class TestSpatialOps:
         """Test coordinate filter mapping from level 0 to mask resolution."""
         # Mask of size 10x10, downsample = 8.0
         mask = np.zeros((10, 10), dtype=np.uint8)
-        mask[2:5, 2:5] = 1  # x_idx, y_idx in [2, 3, 4]
+        mask[2:5, 2:5] = 1
 
-        # Points at level-0
-        # point1: (24.0, 24.0) -> mapped indices (3, 3) -> inside mask (Yes)
-        # point2: (16.0, 16.0) -> mapped indices (2, 2) -> inside mask (Yes)
-        # point3: (8.0, 8.0) -> mapped indices (1, 1) -> outside mask (No)
         points = [
             (24.0, 24.0),
             (16.0, 16.0),

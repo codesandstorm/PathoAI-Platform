@@ -1,15 +1,14 @@
 """
-pathoai/fusion/fusion_engine.py
-===============================
-Spatial Fusion and sTIL scoring Engine.
+pathoai/stil/engine.py
+======================
+Slide-level sTIL Scoring Coordinator.
 
-Integrates semantic segmentation masks and cell detection coordinates to extract
-the tumor bed, compute tumor-associated stroma areas, filter lymphocytes,
-perform bootstrap confidence interval checks, and generate clinical flags.
+Orchestrates spatial intersection and sTIL calculation using spatial intersection,
+scorer, bootstrap, and confidence subsystems.
 
 Author: PathoAI Research Team
 Created: 2026-07-19
-Milestone: 6.4
+Milestone: 9.5
 """
 
 from __future__ import annotations
@@ -19,13 +18,15 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 
 from pathoai.core.exceptions import ValidationError
-from pathoai.fusion.spatial_ops import (
-    calculate_mask_area,
-    extract_tumor_associated_stroma,
-    extract_tumor_bed,
-    filter_points_in_mask,
-)
-from pathoai.fusion.stil_computer import compute_stil_score
+from pathoai.fusion.geometry import calculate_mask_area
+from pathoai.fusion.point_filter import filter_points_in_mask
+from pathoai.fusion.spatial_intersection import extract_tumor_associated_stroma
+from pathoai.stil.bootstrap import calculate_bootstrap_ci
+from pathoai.stil.confidence import assign_quality_flags
+from pathoai.stil.scorer import compute_stil_score
+
+# Note: extract_tumor_bed is imported from pathoai.tumor_bulk.morphology
+from pathoai.tumor_bulk.morphology import extract_tumor_bed
 
 
 class FusionEngine:
@@ -100,7 +101,7 @@ class FusionEngine:
                 f"Shape mismatch: tumor_mask {tumor_mask.shape} vs stroma_mask {stroma_mask.shape}"
             )
 
-        # 1. Extract contiguous Tumor Bed
+        # 1. Extract contiguous Tumor Bed (delegates to tumor_bulk package)
         tumor_bed = extract_tumor_bed(
             tumor_mask=tumor_mask,
             mpp=self.mpp,
@@ -138,18 +139,22 @@ class FusionEngine:
         )
 
         # 6. Bootstrap Confidence Intervals
-        ci_lower, ci_upper = self._calculate_bootstrap_ci(
+        ci_lower, ci_upper = calculate_bootstrap_ci(
             patch_coords=patch_coords,
             fallback_score=score_stats["estimated_pct"],
+            bootstrap_n=self.bootstrap_n,
+            seed=self.seed,
         )
 
         # 7. Assign Quality Flags
-        quality_flags = self._assign_quality_flags(
+        quality_flags = assign_quality_flags(
             stroma_area_mm2=stroma_area_mm2,
             n_lymph_in_stroma=n_lymph_in_stroma,
             ci_lower=ci_lower,
             ci_upper=ci_upper,
             estimated_pct=score_stats["estimated_pct"],
+            min_stroma_area_mm2=self.min_stroma_area_mm2,
+            min_lymph_for_confidence=self.min_lymph_for_confidence,
         )
 
         return {
@@ -164,65 +169,3 @@ class FusionEngine:
             "ci_95": (ci_lower, ci_upper),
             "quality_flags": quality_flags,
         }
-
-    def _calculate_bootstrap_ci(
-        self,
-        patch_coords: List[Dict[str, Any]] | None,
-        fallback_score: float,
-    ) -> Tuple[float, float]:
-        """Computes the 95% confidence interval using bootstrap resampling of patches."""
-        if not patch_coords or len(patch_coords) < 3:
-            # Fall back to returning the point estimate if bootstrap data is insufficient
-            return fallback_score, fallback_score
-
-        rng = np.random.default_rng(self.seed)
-        scores = np.array([p["score"] for p in patch_coords])
-        weights = np.array([p.get("stroma_area", 1.0) for p in patch_coords])
-
-        bootstrap_means = []
-        n_patches = len(scores)
-
-        for _ in range(self.bootstrap_n):
-            indices = rng.choice(n_patches, size=n_patches, replace=True)
-            sampled_scores = scores[indices]
-            sampled_weights = weights[indices]
-
-            total_w = np.sum(sampled_weights)
-            if total_w > 0.0:
-                mean = np.sum(sampled_scores * sampled_weights) / total_w
-            else:
-                mean = np.mean(sampled_scores)
-            bootstrap_means.append(mean)
-
-        ci_lower = float(np.percentile(bootstrap_means, 2.5))
-        ci_upper = float(np.percentile(bootstrap_means, 97.5))
-        return ci_lower, ci_upper
-
-    def _assign_quality_flags(
-        self,
-        stroma_area_mm2: float,
-        n_lymph_in_stroma: int,
-        ci_lower: float,
-        ci_upper: float,
-        estimated_pct: float,
-    ) -> List[str]:
-        """Assigns clinical quality flags based on guidelines."""
-        flags = []
-
-        if stroma_area_mm2 < self.min_stroma_area_mm2:
-            flags.append("INSUFFICIENT_STROMA")
-
-        if n_lymph_in_stroma < self.min_lymph_for_confidence:
-            flags.append("INSUFFICIENT_LYMPHOCYTES")
-
-        ci_width = ci_upper - ci_lower
-        if ci_width > 20.0:
-            flags.append("LOW_CONFIDENCE")
-
-        # Clinical boundary cases (near 10% or 20% cutoffs)
-        for boundary in [10.0, 20.0]:
-            if abs(estimated_pct - boundary) <= 2.0:
-                flags.append("SCORE_BOUNDARY")
-                break
-
-        return flags
