@@ -74,19 +74,57 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │
 │   ├── segmentation/                       ← Segmentation Engine
 │   │   ├── __init__.py
-│   │   ├── models/
+│   │   ├── registry.py                     ← Model registry mapping names to architectures
+│   │   ├── factory.py                      ← Model factory mapping config to instances
+│   │   ├── model.py                        ← SegmentationModel wrapper (device routing, save/load)
+│   │   ├── losses.py                       ← LossFactory (CE, Dice, Focal, Lovasz, Combined)
+│   │   ├── utils.py                        ← Helpers (sizes, parameter counts, checks)
+│   │   ├── summary.py                      ← Text summary generators
+│   │   ├── inference.py                    ← Batch and patch prediction logic
+│   │   ├── export.py                       ← TorchScript and ONNX compilers
+│   │   └── architectures/
+│   │       ├── __init__.py                 ← Architecture registration trigger
+│   │       └── deeplabv3plus.py            ← Registered DeepLabV3+ implementation
+│   │
+│   ├── training/                           ← Reusable Research Training Engine
+│   │   ├── __init__.py
+│   │   ├── run.py                          ← Thin CLI wrapper entry point
+│   │   ├── orchestrator.py                 ← TrainingOrchestrator pipeline coordinator
+│   │   ├── trainer/
 │   │   │   ├── __init__.py
-│   │   │   ├── base.py                     ← BaseSegmentationModel abstract class
-│   │   │   ├── deeplabv3plus.py            ← DeepLabV3+ implementation (Milestone 4)
-│   │   │   └── registry.py                 ← Segmentation model registry
-│   │   ├── losses/
+│   │   │   ├── trainer.py                  ← Model-agnostic fit/validation engine
+│   │   │   └── state.py                    ← TrainerState tracker
+│   │   ├── callbacks/
 │   │   │   ├── __init__.py
-│   │   │   ├── dice.py                     ← Dice Loss implementation
-│   │   │   ├── focal.py                    ← Focal Loss implementation
-│   │   │   └── combined.py                 ← Dice + Focal combined loss
-│   │   ├── trainer.py                      ← Segmentation training loop (Milestone 4)
-│   │   ├── evaluator.py                    ← Segmentation evaluation metrics (IoU, Dice)
-│   │   └── inference.py                    ← Batch inference + slide-level mask assembly
+│   │   │   ├── base.py                     ← Base Callback observer class
+│   │   │   ├── early_stopping.py           ← EarlyStopping callback logic
+│   │   │   ├── lr_scheduler.py             ← LRSchedulerCallback state step
+│   │   │   ├── model_checkpoint.py         ← ModelCheckpoint tracking callback
+│   │   │   ├── progress.py                 ← ProgressLogger console printer
+│   │   │   └── metrics.py                  ← MetricsCallback validation streaming
+│   │   ├── checkpoint/
+│   │   │   ├── __init__.py
+│   │   │   └── manager.py                  ← CheckpointManager top-K/last tracker
+│   │   ├── experiment/
+│   │   │   ├── __init__.py
+│   │   │   └── experiment.py               ← Experiment directory generator
+│   │   ├── logging/
+│   │   │   ├── __init__.py
+│   │   │   ├── csv_logger.py               ← CSV metrics logger callback
+│   │   │   └── tb_logger.py                ← Tensorboard event metrics logger
+│   │   ├── metrics/
+│   │   │   ├── __init__.py
+│   │   │   ├── aggregation.py              ← MetricCollection metrics pack
+│   │   │   ├── confusion.py                ← ConfusionMatrixMetric class
+│   │   │   └── segmentation.py             ← SegmentationMetrics class
+│   │   ├── reports/
+│   │   │   ├── __init__.py
+│   │   │   └── report_generator.py         ← Markdown experiment summary compiler
+│   │   └── visualization/
+│   │       ├── __init__.py
+│   │       ├── confusion.py                ← ConfusionMatrixPlot renderer
+│   │       └── curves.py                   ← TrainingCurves renderer
+│   │
 │   │
 │   ├── detection/                          ← Detection Engine
 │   │   ├── __init__.py
