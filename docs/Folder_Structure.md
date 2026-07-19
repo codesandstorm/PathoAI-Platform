@@ -86,6 +86,14 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │       ├── __init__.py                 ← Architecture registration trigger
 │   │       └── deeplabv3plus.py            ← Registered DeepLabV3+ implementation
 │   │
+│   ├── tumor_bulk/                         ← Tumor Bulk and Bed Extraction (Milestone 6)
+│   │   ├── __init__.py
+│   │   ├── morphology.py                   ← extract_tumor_bed morphology
+│   │   ├── connected_components.py         ← Labeled regions filters
+│   │   ├── contours.py                     ← skimage contour coordinate extraction
+│   │   ├── roi_generator.py                ← Bounding boxes and ROI metadata
+│   │   └── exporters.py                    ← GeoJSON exporter
+│   │
 │   ├── training/                           ← Reusable Research Training Engine
 │   │   ├── __init__.py
 │   │   ├── run.py                          ← Thin CLI wrapper entry point
@@ -141,12 +149,20 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   ├── evaluator.py                    ← COCO mAP evaluation
 │   │   └── inference.py                    ← Batch inference + coordinate normalization
 │   │
-│   ├── fusion/                             ← Spatial Fusion Engine
+│   ├── fusion/                             ← Spatial Fusion (Milestone 8)
 │   │   ├── __init__.py
-│   │   ├── spatial_ops.py                  ← Centroid-in-mask queries, coordinate intersection
-│   │   ├── stil_computer.py                ← sTIL equation implementation
-│   │   ├── aggregator.py                   ← Patch-to-slide score aggregation
-│   │   └── fusion_engine.py                ← High-level fusion orchestration
+│   │   ├── spatial_intersection.py         ← extract_tumor_associated_stroma
+│   │   ├── point_filter.py                 ← filter_points_in_mask
+│   │   └── geometry.py                     ← calculate_mask_area
+│   │
+│   ├── stil/                               ← sTIL Scoring (Milestone 9)
+│   │   ├── __init__.py
+│   │   ├── scorer.py                       ← compute_stil_score
+│   │   ├── bootstrap.py                    ← Bootstrap CI calculations
+│   │   ├── confidence.py                   ← Quality flags
+│   │   ├── aggregator.py                   ← PatchAggregator
+│   │   └── engine.py                       ← FusionEngine coordinator
+│   │
 │   │
 │   ├── validation/                         ← Validation Engine
 │   │   ├── __init__.py
