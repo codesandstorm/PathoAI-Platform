@@ -108,9 +108,7 @@ class Trainer:
         self.current_batch_pred: Optional[torch.Tensor] = None
         self.current_batch_loss: Optional[torch.Tensor] = None
 
-        # Holds accumulated epoch outputs for evaluation hooks (M4.11)
-        self.epoch_preds: List[torch.Tensor] = []
-        self.epoch_targets: List[torch.Tensor] = []
+
 
     def fit(
         self,
@@ -274,7 +272,7 @@ class Trainer:
         return total_loss / n_batches if n_batches > 0 else 0.0
 
     def validate(self, loader: DataLoader) -> float:
-        """Run validation loop, accumulating predictions for metric hooks.
+        """Run validation loop, triggering batch-by-batch callback hooks.
 
         Parameters
         ----------
@@ -291,9 +289,6 @@ class Trainer:
         n_batches = len(loader)
         self.num_batches = n_batches
 
-        self.epoch_preds.clear()
-        self.epoch_targets.clear()
-
         with torch.no_grad():
             for batch_idx, (images, targets) in enumerate(loader):
                 self.batch_idx = batch_idx
@@ -305,10 +300,15 @@ class Trainer:
                 loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item()
 
-                # Accumulate for metrics evaluation (M4.11 hooks)
-                # Keep them on CPU to prevent GPU RAM bloat during validation
-                self.epoch_preds.append(outputs.detach().cpu())
-                self.epoch_targets.append(targets.detach().cpu())
+                # Stream predictions to batch hooks without RAM accumulation
+                self.current_batch_pred = outputs.detach().cpu()
+                self.current_batch_lbl = targets.detach().cpu()
+
+                self.callback_manager.trigger("on_validation_batch_end", self)
+
+                # Free batch memory
+                self.current_batch_pred = None
+                self.current_batch_lbl = None
 
         self.batch_idx = None
         self.num_batches = None

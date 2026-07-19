@@ -3,8 +3,8 @@ pathoai/training/callbacks/metrics.py
 =====================================
 Metrics Evaluation Callback.
 
-Aggregates predictions accumulated in trainer.epoch_preds/epoch_targets,
-updates a MetricCollection, and sets trainer.current_epoch_metrics.
+Aggregates predictions batch-by-batch during validation and testing,
+updating a MetricCollection and storing results in trainer.current_epoch_metrics.
 
 Author: PathoAI Research Team
 Created: 2026-07-19
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class MetricsCallback(Callback):
-    """Callback that evaluates performance metrics at validation/epoch end."""
+    """Callback that evaluates performance metrics batch-by-batch and at epoch end."""
 
     def __init__(self, n_classes: int) -> None:
         """
@@ -37,23 +37,20 @@ class MetricsCallback(Callback):
         self.metrics = MetricCollection(n_classes=n_classes)
 
     def on_epoch_begin(self, trainer: Trainer) -> None:
-        """Reset validation metrics and prediction lists at epoch start."""
+        """Reset validation metrics and initialize metrics dict at epoch start."""
         self.metrics.reset()
-        # Initialize dictionary to prevent getattr NameError in other callbacks
         trainer.current_epoch_metrics = {}
 
     def on_validation_begin(self, trainer: Trainer) -> None:
         """Reset validation metrics state."""
         self.metrics.reset()
 
+    def on_validation_batch_end(self, trainer: Trainer) -> None:
+        """Accumulate validation batch predictions and targets."""
+        if trainer.current_batch_pred is not None and trainer.current_batch_lbl is not None:
+            self.metrics.update(trainer.current_batch_pred, trainer.current_batch_lbl)
+
     def on_validation_end(self, trainer: Trainer) -> None:
-        """Aggregate prediction batches and compute validation metrics."""
-        # 1. Update metric collection
-        for preds, targets in zip(trainer.epoch_preds, trainer.epoch_targets):
-            self.metrics.update(preds, targets)
-
-        # 2. Compute final metrics dictionary
+        """Compute final validation metrics and store them in the trainer."""
         computed = self.metrics.compute()
-
-        # 3. Store metrics in trainer for loggers and early stopping callbacks
         trainer.current_epoch_metrics = computed

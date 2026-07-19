@@ -24,7 +24,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from pathoai.core.exceptions import PipelineError, ValidationError
-from pathoai.training.run import (
+from pathoai.training.orchestrator import (
     resolve_optimizer,
     resolve_scheduler,
     run_preflight_verification,

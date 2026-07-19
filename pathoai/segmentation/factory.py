@@ -43,23 +43,33 @@ def create_model(config: Any) -> nn.Module:
         Instantiated PyTorch neural network model.
     """
     seg_cfg = config.segmentation
-    model_name = seg_cfg.model_name
     n_classes = seg_cfg.n_classes
 
-    # Resolve encoder and architecture key from composite name if needed
-    if "deeplabv3plus" in model_name.lower():
-        arch_key = "deeplabv3plus"
-        parts = model_name.split("_", 1)
-        if len(parts) > 1:
-            enc_part = parts[1].replace("_", "-")
-            if "resnet" in enc_part:
-                enc_part = enc_part.replace("-", "")
-            encoder_name = enc_part
+    # Resolve architecture and encoder keys explicitly or via composite model_name fallback
+    arch_key = seg_cfg.get("architecture", None)
+    encoder_name = seg_cfg.get("encoder", None)
+
+    if arch_key is None:
+        model_name = seg_cfg.model_name
+        if "deeplabv3plus" in model_name.lower():
+            arch_key = "deeplabv3plus"
+            parts = model_name.split("_", 1)
+            if len(parts) > 1:
+                enc_part = parts[1].replace("_", "-")
+                if "resnet" in enc_part:
+                    enc_part = enc_part.replace("-", "")
+                encoder_name = enc_part
+            else:
+                encoder_name = seg_cfg.get("encoder_name", "resnet34")
         else:
+            arch_key = model_name
             encoder_name = seg_cfg.get("encoder_name", "resnet34")
-    else:
-        arch_key = model_name
+
+    if encoder_name is None:
         encoder_name = seg_cfg.get("encoder_name", "resnet34")
+
+    # Define model name for logging
+    model_name = seg_cfg.get("model_name", None) or f"{arch_key}_{encoder_name}"
 
     # Pretrained weights defaults
     encoder_weights = seg_cfg.get("encoder_weights", "imagenet")

@@ -54,3 +54,7 @@ class Callback:
     def on_validation_end(self, trainer: Trainer) -> None:
         """Called at the end of the validation run."""
         pass
+
+    def on_validation_batch_end(self, trainer: Trainer) -> None:
+        """Called at the end of each validation batch."""
+        pass
