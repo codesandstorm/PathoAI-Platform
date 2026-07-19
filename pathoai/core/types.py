@@ -555,3 +555,98 @@ class ValidationReport:
             "absolute_error": self.absolute_error,
             "notes": self.notes,
         }
+
+
+# ---------------------------------------------------------------------------
+# SHARED GEOMETRY AND PATHOLOGY DOMAIN MODELS
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class Point:
+    """A 2D coordinate point (x, y)."""
+    x: float
+    y: float
+
+    def to_tuple(self) -> Tuple[float, float]:
+        return (self.x, self.y)
+
+
+@dataclass(frozen=True)
+class BoundingBox:
+    """Bounding box defined by row/col coordinates [min_y, min_x, max_y, max_x]."""
+    min_y: int
+    min_x: int
+    max_y: int
+    max_x: int
+
+    @property
+    def width(self) -> int:
+        return self.max_x - self.min_x
+
+    @property
+    def height(self) -> int:
+        return self.max_y - self.min_y
+
+    def to_yxyx(self) -> List[int]:
+        return [self.min_y, self.min_x, self.max_y, self.max_x]
+
+
+@dataclass(frozen=True)
+class Polygon:
+    """Polygonal boundary represented by exterior (shell) and interior (holes) points lists."""
+    exterior: List[Point]
+    interiors: List[List[Point]] = field(default_factory=list)
+
+    def to_list(self) -> List[List[Tuple[float, float]]]:
+        """Convert polygon coordinates to list format."""
+        coords = [[p.to_tuple() for p in self.exterior]]
+        for hole in self.interiors:
+            coords.append([p.to_tuple() for p in hole])
+        return coords
+
+
+@dataclass
+class TumorROI:
+    """A Region of Interest representing a classified tissue nest or connected region.
+
+    Attributes
+    ----------
+    roi_id : int
+        Unique identifier for the ROI.
+    bbox : BoundingBox
+        Bounding box bounds.
+    centroid : Point
+        Weighted centroid of the region.
+    area_px : int
+        Total area in pixels.
+    area_um2 : float
+        Physical area in square microns.
+    perimeter_um : float
+        Physical boundary perimeter in microns.
+    contours : List[Polygon]
+        Polygonal contours defining the region.
+    eccentricity : float
+        Measure of region elongation (0 = circle, 1 = line).
+    solidity : float
+        Ratio of pixels in region to pixels in convex hull.
+    compactness : float
+        Ratio of region area to perimeter squared (normalized relative to circle).
+    equivalent_diameter_um : float
+        Diameter of circle with equivalent area in microns.
+    class_label : str
+        Classification class name (e.g. 'tumor_bulk').
+    """
+
+    roi_id: int
+    bbox: BoundingBox
+    centroid: Point
+    area_px: int
+    area_um2: float
+    perimeter_um: float
+    contours: List[Polygon]
+    eccentricity: float = 0.0
+    solidity: float = 0.0
+    compactness: float = 0.0
+    equivalent_diameter_um: float = 0.0
+    class_label: str = "tumor_bulk"
+

@@ -3,8 +3,8 @@ pathoai/tumor_bulk/roi_generator.py
 ==================================
 Tumor Bulk ROI Generator.
 
-Extracts Region of Interest (ROI) metadata (bounding boxes, areas, centroids, perimeters)
-for labeled connected components.
+Extracts Region of Interest (ROI) metadata (bounding boxes, areas, centroids,
+perimeters, eccentricity, solidity, compactness) into type-safe TumorROI models.
 
 Author: PathoAI Research Team
 Created: 2026-07-19
@@ -13,15 +13,21 @@ Milestone: 6.4
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import List
 
 import numpy as np
+import skimage.measure
 
+from pathoai.core.types import BoundingBox, Point, Polygon, TumorROI
 from pathoai.tumor_bulk.contours import extract_region_contours
 
 
-def generate_rois(labeled_mask: np.ndarray, mpp: float) -> List[Dict[str, Any]]:
-    """Generates a list of ROI dictionaries with metadata for each labeled component.
+def generate_rois(
+    labeled_mask: np.ndarray,
+    mpp: float,
+    class_label: str = "tumor_bulk",
+) -> List[TumorROI]:
+    """Generates a list of TumorROI objects with advanced morphology metadata.
 
     Parameters
     ----------
@@ -29,11 +35,13 @@ def generate_rois(labeled_mask: np.ndarray, mpp: float) -> List[Dict[str, Any]]:
         Integer mask where 0 is background, and 1, 2, ... are separate regions.
     mpp : float
         Microns per pixel resolution.
+    class_label : str
+        Clinical classification label of the regions.
 
     Returns
     -------
-    List[Dict[str, Any]]
-        List of ROI metadata dictionaries.
+    List[TumorROI]
+        List of typed TumorROI objects.
     """
     if mpp <= 0:
         raise ValueError(f"mpp must be positive. Got: {mpp}")
@@ -42,48 +50,65 @@ def generate_rois(labeled_mask: np.ndarray, mpp: float) -> List[Dict[str, Any]]:
     if num_features == 0:
         return []
 
+    # Compute regionprops
+    props = skimage.measure.regionprops(labeled_mask)
     rois = []
 
-    for label_id in range(1, num_features + 1):
+    for prop in props:
+        label_id = prop.label
         comp_mask = labeled_mask == label_id
-        if not np.any(comp_mask):
-            continue
 
-        rows, cols = np.where(comp_mask)
-        min_y, max_y = int(rows.min()), int(rows.max())
-        min_x, max_x = int(cols.min()), int(cols.max())
+        # Basic geometry
+        min_y, min_x, max_y, max_x = prop.bbox
+        bbox = BoundingBox(min_y=min_y, min_x=min_x, max_y=max_y, max_x=max_x)
 
-        centroid_y = float(np.mean(rows))
-        centroid_x = float(np.mean(cols))
+        centroid_y, centroid_x = prop.centroid
+        centroid = Point(x=centroid_x, y=centroid_y)
 
-        area_px = int(np.sum(comp_mask))
+        area_px = int(prop.area)
         area_um2 = area_px * (mpp**2)
+
+        # Perimeter in microns
+        perimeter_px = float(prop.perimeter)
+        perimeter_um = perimeter_px * mpp
+
+        # Advanced region statistics
+        eccentricity = float(prop.eccentricity)
+        solidity = float(prop.solidity)
+        # equivalent_diameter_area is preferred to avoid deprecation warnings
+        if hasattr(prop, "equivalent_diameter_area"):
+            eq_diam = prop.equivalent_diameter_area
+        else:
+            eq_diam = prop.equivalent_diameter
+        equivalent_diameter_um = float(eq_diam) * mpp
+
+        # Compactness: 4 * pi * Area / Perimeter^2
+        if perimeter_px > 0.0:
+            compactness = (4.0 * np.pi * area_px) / (perimeter_px**2)
+        else:
+            compactness = 0.0
 
         # Extract contours
         contours = extract_region_contours(comp_mask)
-
-        # Calculate perimeter using contour lengths
-        perimeter_px = 0.0
+        polygon_contours = []
         for c in contours:
-            if len(c) > 1:
-                diff = np.diff(c, axis=0)
-                # Euclidean distance sum
-                perimeter_px += float(np.sum(np.sqrt(np.sum(diff**2, axis=1))))
-                
-                # Connect last point back to first
-                last_to_first = c[0] - c[-1]
-                perimeter_px += float(np.sqrt(np.sum(last_to_first**2)))
+            pts = [Point(x=p[0], y=p[1]) for p in c]
+            polygon_contours.append(Polygon(exterior=pts))
 
-        perimeter_um = perimeter_px * mpp
-
-        rois.append({
-            "roi_id": label_id,
-            "bbox_yxyx": [min_y, min_x, max_y, max_x],
-            "centroid_xy": (centroid_x, centroid_y),
-            "area_px": area_px,
-            "area_um2": float(area_um2),
-            "perimeter_um": float(perimeter_um),
-            "contours": [c.tolist() for c in contours],
-        })
+        roi = TumorROI(
+            roi_id=label_id,
+            bbox=bbox,
+            centroid=centroid,
+            area_px=area_px,
+            area_um2=float(area_um2),
+            perimeter_um=float(perimeter_um),
+            contours=polygon_contours,
+            eccentricity=eccentricity,
+            solidity=solidity,
+            compactness=compactness,
+            equivalent_diameter_um=equivalent_diameter_um,
+            class_label=class_label,
+        )
+        rois.append(roi)
 
     return rois
