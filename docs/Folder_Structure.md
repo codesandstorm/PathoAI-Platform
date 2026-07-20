@@ -225,6 +225,17 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   ├── dataset_audit.py                ← Dataset statistical auditor (Milestone 3)
 │   │   └── dataset_validator.py            ← Dataset structural validator (Milestone 3)
 │   │
+│   ├── experiments/                        ← Experiment Tracking & Reproducibility (Milestone 10.5)
+│   │   ├── __init__.py
+│   │   ├── environment.py                  ← EnvironmentAuditor (Git commit, Python, PyTorch, CUDA, GPU)
+│   │   ├── manifest.py                     ← ManifestGenerator (ExperimentManifest DTO JSON/YAML export)
+│   │   ├── reproducibility.py             ← ReproducibilityManager (Seed determinism enforcement)
+│   │   ├── tracker.py                      ← ExperimentTracker (Artifact directory logging)
+│   │   ├── tables.py                       ← PublicationTableGenerator (Table 1, Table 2, Table 3 Markdown)
+│   │   ├── latex.py                        ← LaTeXExporter (Journal LaTeX \begin{table} exports)
+│   │   ├── supplementary.py                ← SupplementaryPackageGenerator (Research package bundling)
+│   │   └── leaderboard.py                  ← ExperimentLeaderboard (Historical run ranking)
+│   │
 │   ├── visualization/                      ← Visualization Engine
 │   │   ├── __init__.py
 │   │   ├── overlay.py                      ← Segmentation + detection overlay renderers

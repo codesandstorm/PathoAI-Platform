@@ -943,6 +943,68 @@ class ValidationReport:
     processing_metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class ExperimentManifest:
+    """Complete provenance and reproducibility manifest for an experiment run.
+
+    Attributes
+    ----------
+    experiment_id : str
+        Unique experiment string identifier.
+    dataset_name : str
+        Target evaluation dataset name.
+    git_commit : str
+        Git commit hash at time of run.
+    python_version : str
+        Python runtime environment version.
+    pytorch_version : str
+        PyTorch runtime version.
+    cuda_version : str
+        CUDA driver/toolkit version.
+    gpu_name : str
+        GPU device hardware description string.
+    random_seed : int
+        Master seed used for PRNG determinism.
+    segmentation_model : str
+        Semantic segmentation backbone key.
+    segmentation_version : str
+        Segmentation weights version string.
+    detection_model : str
+        Cell detection model key.
+    detection_version : str
+        Cell detection weights version string.
+    scoring_version : str
+        Clinical scoring engine version.
+    validation_version : str
+        Validation framework version.
+    execution_date : str
+        ISO 8601 execution timestamp.
+    duration_s : float
+        Total run execution time in seconds.
+    metadata : Dict[str, Any]
+        Additional key-value provenance attributes.
+    """
+
+    experiment_id: str
+    dataset_name: str
+    git_commit: str
+    python_version: str
+    pytorch_version: str
+    cuda_version: str
+    gpu_name: str
+    random_seed: int
+    segmentation_model: str
+    segmentation_version: str
+    detection_model: str
+    detection_version: str
+    scoring_version: str
+    validation_version: str
+    execution_date: str
+    duration_s: float
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+
 
 
 
