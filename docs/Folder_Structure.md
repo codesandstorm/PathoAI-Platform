@@ -172,6 +172,14 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   ├── summary.py                      ← SpatialFusionSummary generator
 │   │   └── utils.py                        ← Spatial distance helpers
 │   │
+│   ├── config/                             ← Experiment Configuration & Provenance
+│   │   ├── __init__.py
+│   │   └── experiment_config.py            ← ExperimentConfig DTO (model versioning)
+│   │
+│   ├── pipeline/                           ← Top-Level Pipeline Orchestration
+│   │   ├── __init__.py
+│   │   └── orchestrator.py                 ← PipelineOrchestrator (WSI -> ClinicalReport)
+│   │
 │   ├── scoring/                            ← Clinical sTIL Scoring Engine (Milestone 9)
 │   │   ├── __init__.py
 │   │   ├── registry.py                     ← Scorer registry (@register_scorer)
@@ -190,7 +198,6 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   ├── summary.py                      ← ScoringSummary generator
 │   │   ├── report.py                       ← ReportGenerator for ClinicalReport DTO
 │   │   └── utils.py                        ← Unit conversion and math helpers
-│   │   └── engine.py                       ← FusionEngine coordinator
 │   │
 │   │
 │   ├── validation/                         ← Validation Engine
