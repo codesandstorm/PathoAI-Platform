@@ -250,12 +250,23 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   ├── csv_exporter.py                 ← Batch CSV export
 │   │   └── pdf_reporter.py                 ← PDF clinical summary (future)
 │   │
-│   └── dashboard/                          ← Clinical Dashboard (Future Milestone 7+)
+│   └── dashboard/                          ← Clinical Digital Pathology Platform (Milestone 11)
 │       ├── __init__.py
 │       ├── api/
-│       │   └── __init__.py                 ← REST API stub
-│       └── ui/
-│           └── __init__.py                 ← Web UI stub
+│       │   ├── __init__.py
+│       │   ├── app.py                      ← FastAPI server entry point & CORS
+│       │   ├── routes.py                   ← REST endpoints for Cases, Pipeline, Validation, Experiments
+│       │   └── schemas.py                  ← Pydantic API DTO schemas
+│       └── ui/                             ← Web Application Frontend (Linear + Vercel + Figma aesthetic)
+│           ├── index.html                  <!-- Main SPA template -->
+│           ├── app.js                      <!-- Router & Views (Dashboard, Cases, Viewer, Analysis, Validation, Experiments, Publication) -->
+│           ├── styles/
+│           │   └── theme.css               <!-- Color tokens, Inter typography, 8px grid -->
+│           └── components/
+│               ├── Navbar.js               <!-- Clinical header & patient search -->
+│               ├── Sidebar.js              <!-- Left navigation shell -->
+│               ├── Card.js                 <!-- Clinical card container -->
+│               └── MetricBadge.js          <!-- Risk badges & status tags -->
 │
 ├── config/                                 ← All YAML configuration files
 │   ├── base.yaml                           ← Master defaults for all settings
