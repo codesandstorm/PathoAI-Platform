@@ -5,7 +5,7 @@ Pydantic API DTO Schemas for Clinical Digital Pathology Platform REST API.
 
 Author: PathoAI Research Team
 Created: 2026-07-20
-Milestone: 11.1
+Milestone: Phase 2 (REST API Integration)
 """
 
 from __future__ import annotations
@@ -33,6 +33,11 @@ class PipelineRunRequest(BaseModel):
     detection_model: str = "yolo"
 
 
+class ValidationRunRequest(BaseModel):
+    experiment_name: str = "exp_clinical_val"
+    dataset_name: str = "TIGER_Val"
+
+
 class ClinicalReportResponse(BaseModel):
     slide_id: str
     score_percent: float
@@ -40,3 +45,19 @@ class ClinicalReportResponse(BaseModel):
     confidence_interval: List[float]
     interpretation: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OverlayPayloadResponse(BaseModel):
+    slide_id: str
+    tumor_rois: List[Dict[str, Any]]
+    cell_detections: List[Dict[str, Any]]
+    density_heatmap: Dict[str, Any]
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PublicationGenerateResponse(BaseModel):
+    experiment_name: str
+    table1_markdown: str
+    table2_markdown: str
+    table3_markdown: str
+    table3_latex: str

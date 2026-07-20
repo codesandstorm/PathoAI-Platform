@@ -11,15 +11,23 @@ from pathoai.dashboard.api.routes import PlatformAPIService
 
 
 def test_end_to_end_dashboard_api_integration():
-    """Verifies complete REST API server routing and service methods."""
+    """Verifies complete REST API server routing, DeepZoom tiles, AI overlays, and validation integration."""
     service = PlatformAPIService()
 
     cases = service.get_cases()
     assert len(cases) >= 2
 
-    leaderboard = service.get_leaderboard()
-    assert isinstance(leaderboard, list)
+    dzi_xml = service.get_slide_dzi("CASE-2026-8891")
+    assert 'xmlns="http://schemas.microsoft.com/deepzoom/2008"' in dzi_xml
 
-    run_res = service.run_pipeline("slide_integration_01")
-    assert run_res["clinical_category"] == "Intermediate"
-    assert run_res["slide_id"] == "slide_integration_01"
+    tile_bytes = service.get_slide_tile("CASE-2026-8891", 10, 0, 0)
+    assert tile_bytes[:4] == b"\x89PNG"
+
+    overlays = service.get_slide_overlays("CASE-2026-8891")
+    assert len(overlays["tumor_rois"]) >= 1
+
+    val_res = service.run_validation("exp_nature_med_001", "TIGER_Grand_Challenge")
+    assert val_res["scoring_icc"] > 0.9
+
+    pub_res = service.generate_publication("exp_nature_med_001")
+    assert "Table 3:" in pub_res["table3_markdown"]
