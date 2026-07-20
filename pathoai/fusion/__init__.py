@@ -27,6 +27,8 @@ from pathoai.fusion.summary import generate_spatial_fusion_summary
 from pathoai.fusion.validation import SpatialValidator
 from pathoai.fusion.visualization import draw_spatial_fusion_overlay
 
+from pathoai.core.types import FusionResult, SpatialLabel
+
 __all__ = [
     "register_fusion_op",
     "get_fusion_op",
@@ -35,6 +37,8 @@ __all__ = [
     "SpatialIndex",
     "ROIMapper",
     "FusionPipeline",
+    "FusionResult",
+    "SpatialLabel",
     "SpatialValidator",
     "point_in_polygon",
     "nearest_boundary_point",

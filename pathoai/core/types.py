@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -726,6 +727,52 @@ class SpatialDetection:
     nearest_boundary_point: Point
     spatial_label: str
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class SpatialLabel(str, Enum):
+    """Enumeration of spatial cell relationship categories."""
+    INTRATUMORAL = "intratumoral"
+    PERITUMORAL_STROMA = "peritumoral_stromal"
+    DISTANT = "distant"
+    OUTSIDE_TISSUE = "outside_tissue"
+
+
+@dataclass
+class FusionResult:
+    """Encapsulates spatial fusion results and aggregate statistics.
+
+    Attributes
+    ----------
+    slide_id : str
+        Source slide identifier.
+    spatial_detections : List[SpatialDetection]
+        List of typed SpatialDetection objects.
+    total_cells : int
+        Total number of processed cell detections.
+    intratumoral_cells : int
+        Number of cells located inside tumor regions.
+    stromal_cells : int
+        Number of cells located inside tumor-associated stroma.
+    distant_cells : int
+        Number of cells located outside tumor and stroma.
+    rejected_cells : int
+        Number of detections rejected by distance or spatial filters.
+    processing_time_s : float
+        Total fusion execution time in seconds.
+    metadata : Dict[str, Any]
+        Additional key-value parameters.
+    """
+
+    slide_id: str
+    spatial_detections: List[SpatialDetection]
+    total_cells: int
+    intratumoral_cells: int
+    stromal_cells: int
+    distant_cells: int
+    rejected_cells: int = 0
+    processing_time_s: float = 0.0
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
 
 
 

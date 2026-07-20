@@ -4,7 +4,7 @@ pathoai/fusion/pipeline.py
 Spatial Fusion Pipeline Coordinator.
 
 Orchestrates spatial association between TumorROI objects and CellDetection objects,
-returning typed SpatialDetection domain models.
+returning typed SpatialDetection domain models and structured FusionResult aggregates.
 
 Author: PathoAI Research Team
 Created: 2026-07-20
@@ -13,9 +13,10 @@ Milestone: 8.11
 
 from __future__ import annotations
 
+import time
 from typing import Any, List, Optional
 
-from pathoai.core.types import CellDetection, SpatialDetection, TumorROI
+from pathoai.core.types import CellDetection, FusionResult, SpatialDetection, TumorROI
 from pathoai.fusion.factory import create_fusion_engine
 from pathoai.fusion.roi_mapper import ROIMapper
 from pathoai.fusion.validation import SpatialValidator
@@ -83,3 +84,52 @@ class FusionPipeline:
             raise ValueError(f"Spatial fusion validation failed: {val_status['issues']}")
 
         return spatial_dets
+
+    def process_fusion(
+        self,
+        rois: List[TumorROI],
+        detections: List[CellDetection],
+        mpp: float,
+        slide_id: str = "unknown",
+    ) -> FusionResult:
+        """Executes spatial fusion mapping and encapsulates results in a FusionResult DTO.
+
+        Parameters
+        ----------
+        rois : List[TumorROI]
+            Extracted tissue regions.
+        detections : List[CellDetection]
+            Detected cells.
+        mpp : float
+            Microns per pixel resolution.
+        slide_id : str
+            Identifier of source slide.
+
+        Returns
+        -------
+        FusionResult
+            Aggregated spatial fusion result container.
+        """
+        t0 = time.time()
+        spatial_dets = self.process(rois, detections, mpp)
+
+        total_cells = len(detections)
+        intratumoral = sum(1 for sd in spatial_dets if sd.inside_tumor)
+        stromal = sum(1 for sd in spatial_dets if sd.inside_stroma)
+        distant = sum(1 for sd in spatial_dets if not sd.inside_tumor and not sd.inside_stroma)
+        rejected = total_cells - len(spatial_dets)
+        t_elapsed = float(time.time() - t0)
+
+        if detections and slide_id == "unknown":
+            slide_id = detections[0].slide_id
+
+        return FusionResult(
+            slide_id=slide_id,
+            spatial_detections=spatial_dets,
+            total_cells=total_cells,
+            intratumoral_cells=intratumoral,
+            stromal_cells=stromal,
+            distant_cells=distant,
+            rejected_cells=rejected,
+            processing_time_s=t_elapsed,
+        )
