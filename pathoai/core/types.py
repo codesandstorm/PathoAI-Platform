@@ -842,6 +842,108 @@ class ClinicalReport:
     processing_metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class SegmentationMetrics:
+    """Evaluation metrics for semantic segmentation."""
+    dice: float
+    iou: float
+    precision: float
+    recall: float
+    specificity: float
+    pixel_accuracy: float
+    f1: float
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class DetectionMetrics:
+    """Evaluation metrics for cell detection."""
+    precision: float
+    recall: float
+    f1: float
+    ap50: float
+    ap75: float
+    map5095: float
+    tp: int
+    fp: int
+    fn: int
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ScoringMetrics:
+    """Evaluation metrics for clinical sTIL scoring agreement."""
+    mae: float
+    rmse: float
+    pearson_r: float
+    pearson_pvalue: float
+    spearman_r: float
+    spearman_pvalue: float
+    r2: float
+    icc: float
+    bland_altman_bias: float
+    bland_altman_lower_limit: float
+    bland_altman_upper_limit: float
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class StatisticalAnalysis:
+    """Statistical confidence, bootstrap, and effect size metrics."""
+    confidence_intervals: Dict[str, Tuple[float, float]]
+    bootstrap_results: Dict[str, Any]
+    p_values: Dict[str, float]
+    effect_sizes: Dict[str, float]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class BenchmarkResults:
+    """Benchmarking comparison against literature/baseline models."""
+    baseline_name: str
+    target_metrics: Dict[str, float]
+    baseline_metrics: Dict[str, float]
+    percentage_improvements: Dict[str, float]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ErrorAnalysis:
+    """Structured error analysis failure modes and outlier slides."""
+    false_positives_count: int
+    false_negatives_count: int
+    outlier_slides: List[str]
+    failure_modes: Dict[str, int]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ValidationResult:
+    """Master container for complete multi-stage pipeline validation metrics."""
+    experiment_name: str
+    dataset_name: str
+    slide_count: int
+    segmentation_metrics: SegmentationMetrics
+    detection_metrics: DetectionMetrics
+    scoring_metrics: ScoringMetrics
+    statistical_analysis: StatisticalAnalysis
+    benchmark_results: BenchmarkResults
+    error_analysis: ErrorAnalysis
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ValidationReport:
+    """Executive validation report output DTO."""
+    report_id: str
+    experiment_name: str
+    validation_result: ValidationResult
+    executive_summary: str
+    recommendations: List[str] = field(default_factory=list)
+    processing_metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+
 
 
 

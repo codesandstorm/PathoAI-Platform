@@ -200,13 +200,30 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   └── utils.py                        ← Unit conversion and math helpers
 │   │
 │   │
-│   ├── validation/                         ← Validation Engine
+│   ├── validation/                         ← Scientific Validation & Benchmarking (Milestone 10)
 │   │   ├── __init__.py
-│   │   ├── bootstrap.py                    ← Bootstrap CI estimation
-│   │   ├── agreement.py                    ← Inter-rater agreement (Cohen's κ, ICC)
-│   │   ├── statistics.py                   ← Normality tests, outlier detection
-│   │   ├── quality_flags.py                ← Quality flag assignment logic
-│   │   └── validation_engine.py            ← High-level validation orchestration
+│   │   ├── registry.py                     ← Evaluator registry (@register_evaluator)
+│   │   ├── factory.py                      ← create_evaluator factory
+│   │   ├── pipeline.py                     ← ValidationPipeline master coordinator
+│   │   ├── segmentation.py                 ← SegmentationEvaluator (Dice, IoU, Precision, Recall, Specificity)
+│   │   ├── detection.py                    ← DetectionEvaluator (Precision, Recall, F1, AP50, mAP50-95)
+│   │   ├── fusion.py                       ← SpatialFusionEvaluator (Mapping accuracy)
+│   │   ├── scoring.py                      ← ClinicalScoringEvaluator (MAE, RMSE, Pearson r, Spearman rho, ICC)
+│   │   ├── correlation.py                  ← CorrelationEngine (Pearson, Spearman, R2)
+│   │   ├── agreement.py                    ← AgreementEngine (ICC, Bland-Altman bias & limits)
+│   │   ├── statistics.py                   ← ValidationStatistics (Bootstrap CIs & effect sizes)
+│   │   ├── calibration.py                  ← CalibrationEngine (ECE & reliability diagrams)
+│   │   ├── robustness.py                   ← RobustnessEngine (Magnification & stain robustness)
+│   │   ├── benchmark.py                    ← BenchmarkEngine (Literature & baseline comparisons)
+│   │   ├── ablation.py                     ← AblationEngine (Backbones & threshold variations)
+│   │   ├── error_analysis.py               ← ErrorAnalysisEngine (Failure mode categorization & outliers)
+│   │   ├── visualization.py                ← ValidationVisualizer (Bland-Altman, scatter plots, PR curves)
+│   │   ├── exporter.py                     ← ValidationExporter (JSON, CSV, Markdown reports)
+│   │   ├── summary.py                      ← ValidationSummary generator
+│   │   ├── report.py                       ← ValidationReportGenerator for ValidationReport DTO
+│   │   ├── utils.py                        ← Validation math helpers
+│   │   ├── dataset_audit.py                ← Dataset statistical auditor (Milestone 3)
+│   │   └── dataset_validator.py            ← Dataset structural validator (Milestone 3)
 │   │
 │   ├── visualization/                      ← Visualization Engine
 │   │   ├── __init__.py
