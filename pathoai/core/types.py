@@ -691,3 +691,41 @@ class CellDetection:
     area_um2: float = 0.0
 
 
+@dataclass
+class SpatialDetection:
+    """Cell detection augmented with spatial relationship metadata relative to tissue ROIs.
+
+    Attributes
+    ----------
+    detection : CellDetection
+        Original typed cell detection instance.
+    roi : TumorROI
+        Associated parent TumorROI region.
+    inside_tumor : bool
+        True if cell centroid lies within tumor compartment.
+    inside_stroma : bool
+        True if cell centroid lies within tumor-associated stroma compartment.
+    distance_to_tumor_boundary_um : float
+        Distance in microns to nearest tumor region boundary.
+    distance_to_roi_centroid_um : float
+        Distance in microns to the ROI centroid.
+    nearest_boundary_point : Point
+        Nearest point on the ROI polygon boundary.
+    spatial_label : str
+        Classification label (e.g., 'intratumoral_lymphocyte', 'stromal_lymphocyte', 'distant_lymphocyte').
+    metadata : Dict[str, Any]
+        Additional key-value spatial provenance parameters.
+    """
+
+    detection: CellDetection
+    roi: TumorROI
+    inside_tumor: bool
+    inside_stroma: bool
+    distance_to_tumor_boundary_um: float
+    distance_to_roi_centroid_um: float
+    nearest_boundary_point: Point
+    spatial_label: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+

@@ -156,11 +156,21 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │       ├── __init__.py
 │   │       └── yolo.py                     ← YOLODetector architecture wrapper
 │   │
-│   ├── fusion/                             ← Spatial Fusion (Milestone 8)
+│   ├── fusion/                             ← Spatial Fusion Engine (Milestone 8)
 │   │   ├── __init__.py
-│   │   ├── spatial_intersection.py         ← extract_tumor_associated_stroma
-│   │   ├── point_filter.py                 ← filter_points_in_mask
-│   │   └── geometry.py                     ← calculate_mask_area
+│   │   ├── registry.py                     ← Spatial fusion op registry (@register_fusion_op)
+│   │   ├── factory.py                      ← create_fusion_engine factory
+│   │   ├── pipeline.py                     ← FusionPipeline coordinator
+│   │   ├── roi_mapper.py                   ← ROIMapper cell-to-ROI assignment
+│   │   ├── coordinate_index.py             ← SpatialIndex grid candidate lookups
+│   │   ├── geometry.py                     ← Geometry Engine (point-in-polygon, distances)
+│   │   ├── spatial_intersection.py         ← Mask and polygon spatial intersections
+│   │   ├── point_filter.py                 ← Point filtering routines
+│   │   ├── validation.py                   ← SpatialValidator mapping consistency checker
+│   │   ├── exporter.py                     ← SpatialDetection exporters (JSON, CSV)
+│   │   ├── visualization.py                ← Spatial overlays and boundary lines
+│   │   ├── summary.py                      ← SpatialFusionSummary generator
+│   │   └── utils.py                        ← Spatial distance helpers
 │   │
 │   ├── stil/                               ← sTIL Scoring (Milestone 9)
 │   │   ├── __init__.py
