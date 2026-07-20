@@ -172,12 +172,24 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │   ├── summary.py                      ← SpatialFusionSummary generator
 │   │   └── utils.py                        ← Spatial distance helpers
 │   │
-│   ├── stil/                               ← sTIL Scoring (Milestone 9)
+│   ├── scoring/                            ← Clinical sTIL Scoring Engine (Milestone 9)
 │   │   ├── __init__.py
-│   │   ├── scorer.py                       ← compute_stil_score
-│   │   ├── bootstrap.py                    ← Bootstrap CI calculations
-│   │   ├── confidence.py                   ← Quality flags
-│   │   ├── aggregator.py                   ← PatchAggregator
+│   │   ├── registry.py                     ← Scorer registry (@register_scorer)
+│   │   ├── factory.py                      ← create_scorer factory
+│   │   ├── pipeline.py                     ← ScoringPipeline coordinator
+│   │   ├── scorer.py                       ← sTILScorer (International Working Group equation)
+│   │   ├── statistics.py                   ← StatisticsEngine (physical count, mm^2, density)
+│   │   ├── bootstrap.py                    ← BootstrapEngine (95% CI calculation)
+│   │   ├── confidence.py                   ← ConfidenceEstimator
+│   │   ├── clinical_rules.py               ← ClinicalRules (Low/Intermediate/High risk thresholds)
+│   │   ├── categorization.py               ← STILCategorizer
+│   │   ├── explainability.py               ← STILExplainability rationale generator
+│   │   ├── validation.py                   ← ScoreValidator boundary checker
+│   │   ├── exporter.py                     ← Score and report exporters (JSON, CSV, Markdown)
+│   │   ├── visualization.py                ← sTIL density heatmaps and histograms
+│   │   ├── summary.py                      ← ScoringSummary generator
+│   │   ├── report.py                       ← ReportGenerator for ClinicalReport DTO
+│   │   └── utils.py                        ← Unit conversion and math helpers
 │   │   └── engine.py                       ← FusionEngine coordinator
 │   │
 │   │

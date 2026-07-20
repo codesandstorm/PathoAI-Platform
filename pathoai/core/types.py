@@ -774,5 +774,74 @@ class FusionResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class STILScore:
+    """stromal Tumor Infiltrating Lymphocytes (sTIL) scoring result DTO.
+
+    Attributes
+    ----------
+    slide_id : str
+        Source slide identifier.
+    score_percent : float
+        Primary sTIL score percentage in range [0, 100].
+    stromal_area_mm2 : float
+        Total tumor-associated stromal area in square millimeters.
+    stromal_lymphocytes : int
+        Count of lymphocytes located within the tumor-associated stroma.
+    lymphocyte_density : float
+        Lymphocyte density (cells per mm^2 stroma).
+    confidence_interval : Tuple[float, float]
+        95% bootstrap confidence interval bounds (ci_lower, ci_upper).
+    confidence_level : float
+        Nominal confidence level (default 0.95).
+    clinical_category : str
+        Categorical risk bucket (e.g. 'Low', 'Intermediate', 'High').
+    explanation : str
+        Human-readable clinical rationale and summary of measurements.
+    metadata : Dict[str, Any]
+        Additional provenance data.
+    """
+
+    slide_id: str
+    score_percent: float
+    stromal_area_mm2: float
+    stromal_lymphocytes: int
+    lymphocyte_density: float
+    confidence_interval: Tuple[float, float]
+    confidence_level: float = 0.95
+    clinical_category: str = "Low"
+    explanation: str = ""
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ClinicalReport:
+    """Comprehensive clinical evaluation report output DTO.
+
+    Attributes
+    ----------
+    slide_id : str
+        Source slide identifier.
+    stil_score : STILScore
+        Primary sTIL scoring DTO instance.
+    interpretation : str
+        Detailed clinical interpretation paragraph based on guidelines.
+    summary : Dict[str, Any]
+        Structured summary key-values.
+    recommendations : List[str]
+        List of clinical follow-up recommendations or quality warnings.
+    processing_metadata : Dict[str, Any]
+        Pipeline version, parameters, execution timestamps.
+    """
+
+    slide_id: str
+    stil_score: STILScore
+    interpretation: str
+    summary: Dict[str, Any]
+    recommendations: List[str] = field(default_factory=list)
+    processing_metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+
 
 

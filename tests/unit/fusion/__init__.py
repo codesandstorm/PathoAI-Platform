@@ -1,1 +1,1 @@
-﻿"""Unit tests for pathoai.fusion."""
+"""Unit tests for fusion package."""
