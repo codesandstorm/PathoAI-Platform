@@ -50,7 +50,6 @@ async function fetchCases() {
       window.appState.cases = await res.json();
     }
   } catch (e) {
-    // Fallback data if offline
     window.appState.cases = [
       { id: "CASE-2026-8891", patient: "PT-90412", hospital: "Mayo Clinic", scanner: "Aperio AT2", diagnosis: "Invasive Ductal Carcinoma", stil: 28.5, ci: "[24.1%, 32.9%]", category: "Intermediate", pathologist: "Dr. E. Vance, MD", status: "Completed" },
       { id: "CASE-2026-8892", patient: "PT-90413", hospital: "Johns Hopkins", scanner: "Hamamatsu NanoZoomer", diagnosis: "Triple-Negative Breast Cancer", stil: 64.2, ci: "[59.8%, 68.6%]", category: "High", pathologist: "Dr. M. Sterling, MD", status: "Completed" },
@@ -72,7 +71,8 @@ async function fetchOverlays(slideId) {
       ],
       cell_detections: [
         { centroid: [210, 150] }, { centroid: [230, 180] }, { centroid: [280, 210] }
-      ]
+      ],
+      metadata: { mpp: 0.25, vendor: "Aperio", model_version: "DeepLabV3+_v1.2" }
     };
   }
 }
@@ -139,7 +139,7 @@ function renderDashboard() {
         ${PathoCard({ contentHtml: `<div class="caption">Mean sTIL Score</div><div class="h2">${avgStil}%</div><div style="color:var(--text-secondary); font-size:12px;">Calculated Cohort Avg</div>` })}
         ${PathoCard({ contentHtml: `<div class="caption">GPU Cluster Load</div><div class="h2">16%</div><div style="color:var(--success); font-size:12px;">2 Active / 0 Queued</div>` })}
         ${PathoCard({ contentHtml: `<div class="caption">Clinical ICC</div><div class="h2">0.941</div><div style="color:var(--success); font-size:12px;">95% LoA [-6.5, +7.5]</div>` })}
-        ${PathoCard({ contentHtml: `<div class="caption">Pipeline Status</div><div class="h2" style="color:var(--success);">Verified</div><div style="color:var(--text-secondary); font-size:12px;">613 Unit Tests</div>` })}
+        ${PathoCard({ contentHtml: `<div class="caption">Pipeline Status</div><div class="h2" style="color:var(--success);">Verified</div><div style="color:var(--text-secondary); font-size:12px;">619 Unit Tests</div>` })}
       </div>
 
       <!-- Main Section: Recent Cases & Active Jobs -->
@@ -282,7 +282,29 @@ function renderCases() {
 function renderViewer() {
   const caseItem = window.appState.cases.find(c => c.id === window.appState.selectedCaseId) || window.appState.cases[0] || { id: "CASE-2026-8891", patient: "PT-90412", diagnosis: "Invasive Ductal Carcinoma", stil: 28.5, ci: "[24.1%, 32.9%]", category: "Intermediate" };
   const o = window.appState.overlays;
-  const overlaysData = window.appState.currentOverlays;
+  const overlaysData = window.appState.currentOverlays || { tumor_rois: [], cell_detections: [], metadata: {} };
+
+  // Dynamically generate SVG Polygons from TumorROIs
+  let tumorSvgElements = "";
+  if (o.tumorBed && overlaysData.tumor_rois) {
+    tumorSvgElements = overlaysData.tumor_rois.map((roi, idx) => {
+      const pts = (roi.polygon_points || [[120, 80], [480, 90], [440, 360], [150, 340]]).map(p => p.join(",")).join(" ");
+      const strokeColor = idx % 2 === 0 ? "#DC2626" : "#2563EB";
+      const fillColor = idx % 2 === 0 ? "rgba(220, 38, 38, 0.35)" : "rgba(37, 99, 235, 0.35)";
+      return `<polygon points="${pts}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2"/>`;
+    }).join("\n");
+  }
+
+  // Dynamically generate SVG Circles from CellDetections
+  let cellSvgElements = "";
+  if (o.lymphocytes && overlaysData.cell_detections) {
+    cellSvgElements = overlaysData.cell_detections.map(det => {
+      const [cx, cy] = det.centroid || [200, 200];
+      return `<circle cx="${cx}" cy="${cy}" r="5" fill="#16A34A"/>`;
+    }).join("\n");
+  }
+
+  const meta = overlaysData.metadata || { mpp: 0.25, vendor: "Aperio", model_version: "DeepLabV3+_v1.2" };
 
   return `
     <div style="display: flex; flex-direction: column; height: calc(100vh - 60px); overflow: hidden;">
@@ -346,6 +368,13 @@ function renderViewer() {
             </div>
             <input type="range" min="0.1" max="1.0" step="0.05" value="${o.opacity}" style="width: 100%;" oninput="window.setOpacity(this.value)">
           </div>
+
+          <div style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px; font-size: 11px; color: var(--text-secondary);">
+            <div><strong>Provenance Metadata:</strong></div>
+            <div>Model: <code>${meta.model_version || 'DeepLabV3+'}</code></div>
+            <div>MPP: <code>${meta.mpp || 0.25} μm/px</code></div>
+            <div>Scanner: <code>${meta.vendor || 'Aperio'}</code></div>
+          </div>
         </div>
 
         <!-- Center Viewport: Deep Zoom Canvas / OpenSeadragon Container -->
@@ -355,22 +384,14 @@ function renderViewer() {
             
             <!-- Dynamic AI Overlay SVG Canvas -->
             <svg id="wsi-overlay-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: ${o.opacity}; transition: opacity 150ms ease-in-out;">
-              ${o.tumorBed ? `<polygon points="120,80 480,90 440,360 150,340" fill="rgba(220, 38, 38, 0.35)" stroke="#DC2626" stroke-width="2"/>` : ''}
-              ${o.stroma ? `<polygon points="180,120 420,130 390,310 200,290" fill="rgba(37, 99, 235, 0.35)" stroke="#2563EB" stroke-width="2" stroke-dasharray="4"/>` : ''}
-              ${o.lymphocytes ? `
-                <circle cx="210" cy="150" r="5" fill="#16A34A"/>
-                <circle cx="230" cy="180" r="5" fill="#16A34A"/>
-                <circle cx="280" cy="210" r="5" fill="#16A34A"/>
-                <circle cx="310" cy="240" r="5" fill="#16A34A"/>
-                <circle cx="340" cy="170" r="5" fill="#16A34A"/>
-                <circle cx="360" cy="290" r="5" fill="#16A34A"/>
-              ` : ''}
+              ${tumorSvgElements}
+              ${cellSvgElements}
             </svg>
           </div>
 
           <!-- Scale Bar & Viewport Stats Overlay -->
           <div style="position: absolute; bottom: 16px; left: 16px; background: rgba(15, 23, 42, 0.85); color: white; padding: 6px 12px; border-radius: 4px; font-size: 11px; display: flex; gap: 12px;">
-            <span>Mag: 40x (MPP: 0.25 μm/px)</span>
+            <span>Mag: 40x (MPP: ${meta.mpp || 0.25} μm/px)</span>
             <span>Coords: (14,210, 8,940)</span>
             <span>FOV: 1.25 mm²</span>
           </div>

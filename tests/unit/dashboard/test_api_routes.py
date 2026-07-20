@@ -38,6 +38,8 @@ class TestAPIRoutes:
         assert overlays["slide_id"] == "slide_01"
         assert "tumor_rois" in overlays
         assert "cell_detections" in overlays
+        assert "model_version" in overlays["metadata"]
+        assert "checkpoint" in overlays["metadata"]
 
     def test_run_validation(self):
         service = PlatformAPIService()
