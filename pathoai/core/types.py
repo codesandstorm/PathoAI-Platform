@@ -650,3 +650,44 @@ class TumorROI:
     equivalent_diameter_um: float = 0.0
     class_label: str = "tumor_bulk"
 
+
+@dataclass
+class CellDetection:
+    """Single detected cell object with spatial and class metadata.
+
+    Attributes
+    ----------
+    detection_id : str
+        Unique identifier for this detection instance.
+    slide_id : str
+        Source slide identifier.
+    roi_id : str
+        Identifier of the parent TumorROI or region.
+    bbox : BoundingBox
+        Bounding box bounds in slide level-0 coordinates.
+    centroid : Point
+        Cell centroid coordinate in slide level-0 coordinates.
+    confidence : float
+        Detection confidence score [0, 1].
+    class_id : int
+        Integer class identifier.
+    class_name : str
+        Human-readable class name string (e.g. 'lymphocyte').
+    area_pixels : float
+        Area of detection bounding box in pixels.
+    area_um2 : float
+        Physical area of detection in square microns.
+    """
+
+    detection_id: str
+    slide_id: str
+    roi_id: str
+    bbox: BoundingBox
+    centroid: Point
+    confidence: float
+    class_id: int
+    class_name: str
+    area_pixels: float = 0.0
+    area_um2: float = 0.0
+
+

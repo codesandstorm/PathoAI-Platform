@@ -134,20 +134,27 @@ PathoAI-Platform/                           ← Project root (D:\Research\PathoA
 │   │       └── curves.py                   ← TrainingCurves renderer
 │   │
 │   │
-│   ├── detection/                          ← Detection Engine
+│   ├── detection/                          ← Cell Detection Engine (Milestone 7)
 │   │   ├── __init__.py
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py                     ← BaseDetectionModel abstract class
-│   │   │   ├── faster_rcnn.py              ← Faster R-CNN implementation (Milestone 5)
-│   │   │   └── registry.py                 ← Detection model registry
-│   │   ├── losses/
-│   │   │   ├── __init__.py
-│   │   │   └── detection_losses.py         ← RPN + classification losses
-│   │   ├── transforms.py                   ← Detection-specific augmentations
-│   │   ├── trainer.py                      ← Detection training loop (Milestone 5)
-│   │   ├── evaluator.py                    ← COCO mAP evaluation
-│   │   └── inference.py                    ← Batch inference + coordinate normalization
+│   │   ├── registry.py                     ← Detector architecture registry (@register_detector)
+│   │   ├── factory.py                      ← create_detector factory
+│   │   ├── model.py                        ← DetectionModel PyTorch wrapper
+│   │   ├── trainer.py                      ← DetectionTrainer loop
+│   │   ├── inference.py                    ← DetectionInference batch execution
+│   │   ├── pipeline.py                     ← DetectionPipeline coordinator
+│   │   ├── tiling.py                       ← TileGenerator streaming patches
+│   │   ├── merger.py                       ← DetectionMerger NMS tile overlap deduplication
+│   │   ├── postprocessing.py               ← Confidence filter and NMS routines
+│   │   ├── coordinate_transform.py         ← CoordinateTransformer
+│   │   ├── metrics.py                      ← DetectionMetrics (Precision, Recall, F1, mAP)
+│   │   ├── evaluator.py                    ← DetectionEvaluator
+│   │   ├── exporter.py                     ← Exporters (JSON, CSV, COCO, YOLO TXT)
+│   │   ├── visualization.py                ← Overlays and density heatmaps
+│   │   ├── summary.py                      ← DetectionSummary generator
+│   │   ├── utils.py                        ← Box math helper utilities
+│   │   └── architectures/
+│   │       ├── __init__.py
+│   │       └── yolo.py                     ← YOLODetector architecture wrapper
 │   │
 │   ├── fusion/                             ← Spatial Fusion (Milestone 8)
 │   │   ├── __init__.py

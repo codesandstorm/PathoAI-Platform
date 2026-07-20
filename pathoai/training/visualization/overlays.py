@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 try:
+    import matplotlib
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     # Trigger DLL loading early to catch AppLocker blocks
     import matplotlib.backends.backend_agg
